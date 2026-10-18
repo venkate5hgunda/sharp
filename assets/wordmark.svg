@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48">
+  <defs>
+    <linearGradient id="wmGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+  </defs>
+  <text x="4" y="36" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="900" letter-spacing="4" fill="url(#wmGrad)">
+    SHARP
+  </text>
+  <!-- Spark accent on the letter A -->
+  <polygon points="126,6 128,12 134,14 128,16 126,22 124,16 118,14 124,12" fill="#38bdf8"/>
+</svg>
