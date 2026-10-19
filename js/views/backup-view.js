@@ -1,3 +1,4 @@
+import { localDayKey } from '../core/calendar.js';
 // Backup & Data Sovereignty View — Single-File JSON Export, Import, Checksum Validation & Schema Migrations
 import { downloadBackupFile, downloadQuestionDatasetFile, validateAndMigrateBackup, applyBackup } from '../backup.js';
 import { getStorageStats, loadJSON, KEYS, CURRENT_SCHEMA_VERSION } from '../storage.js';
@@ -9,7 +10,7 @@ import { MAX_IMPORT_BYTES, escapeHTML } from '../content-validation.js';
 
 export function render(container) {
   const meta = loadJSON(KEYS.BACKUP_META, {});
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDayKey();
   const isBackedUpToday = meta.lastBackupDate === today;
   const stats = getStorageStats();
   const datasetStats = getDatasetStats();

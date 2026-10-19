@@ -1,3 +1,4 @@
+import { localDayKey } from './core/calendar.js';
 // Notifications Engine for Sharp — Web Notifications + In-App Daily Prompts
 import { loadJSON, saveJSON, KEYS } from './storage.js';
 
@@ -75,7 +76,7 @@ export class NotificationsManager {
   checkPendingPrompts() {
     const delayed = loadJSON(KEYS.DELAYED_MEMORY, null);
     const workout = loadJSON(KEYS.DAILY_WORKOUT, null);
-    const today = new Date().toISOString().slice(0, 10);
+    const today = localDayKey();
     const nowHour = new Date().getHours();
     const prompts = [];
 
@@ -92,7 +93,7 @@ export class NotificationsManager {
           actionHash: '#/games/delayed-memory',
           actionText: 'Begin Recall Test'
         });
-      } else if (nowHour < 12 && (!delayed.createdAt || new Date(delayed.createdAt).toISOString().slice(0, 10) !== today)) {
+      } else if (nowHour < 12 && (!delayed.createdAt || localDayKey(delayed.createdAt) !== today)) {
         // Morning prompt to commit new items
         prompts.push({
           id: 'morning-commit-needed',
@@ -103,7 +104,7 @@ export class NotificationsManager {
           actionText: 'Study Morning Items'
         });
       }
-    } else if (!delayed || (delayed.status === 'completed' && new Date(delayed.completedAt).toISOString().slice(0, 10) !== today)) {
+    } else if (!delayed || (delayed.status === 'completed' && localDayKey(delayed.completedAt) !== today)) {
       prompts.push({
         id: 'morning-commit-needed',
         type: 'morning',

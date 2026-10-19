@@ -1,3 +1,5 @@
+import { createSessionScope } from '../core/session-scope.js';
+import { createId } from '../core/identity.js';
 import { escapeHTML } from '../content-validation.js';
 // Time-Capsule Delayed Memory — Morning Study & Evening Recall Protocol
 import { loadJSON, saveJSON, KEYS } from '../storage.js';
@@ -42,6 +44,8 @@ const DISTRACTOR_BANK = [
 ];
 
 export function render(container, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.MEMORY] || 1000;
   const config = getGameConfig('delayed-memory', currentRating);
@@ -63,13 +67,14 @@ export function render(container, onComplete) {
   const contentEl = container.querySelector('#dmContent');
 
   if (stored && stored.status === 'committed') {
-    renderWaitingOrRecallView(contentEl, stored, config, currentRating, onComplete);
+    renderWaitingOrRecallView(contentEl, stored, config, currentRating, onComplete, scope);
   } else {
-    renderStudyView(contentEl, config, currentRating, onComplete);
+    renderStudyView(contentEl, config, currentRating, onComplete, scope);
   }
+  return scope.dispose;
 }
 
-function renderStudyView(container, config, currentRating, onComplete) {
+function renderStudyView(container, config, currentRating, onComplete, scope) {
   const cluster = getMemoryCluster(config.tier);
   let targetWords = [];
 
@@ -117,13 +122,13 @@ function renderStudyView(container, config, currentRating, onComplete) {
 
   audio.flash();
 
-  container.querySelector('#commitBtn').addEventListener('click', () => {
+  scope.listen(container.querySelector('#commitBtn'), 'click', () => {
     audio.tap();
     const readyAt = Date.now() + 6 * 3600 * 1000; // 6 hours
     saveSession(targetWords, 'daily_morning', readyAt);
   });
 
-  container.querySelector('#quickTestBtn').addEventListener('click', () => {
+  scope.listen(container.querySelector('#quickTestBtn'), 'click', () => {
     audio.tap();
     const readyAt = Date.now() + 180 * 1000; // 3 minutes
     saveSession(targetWords, 'quick_timer', readyAt);
@@ -131,7 +136,7 @@ function renderStudyView(container, config, currentRating, onComplete) {
 
   function saveSession(items, type, readyAt) {
     const session = {
-      id: `dm_${Date.now()}`,
+      id: createId('dm'),
       status: 'committed',
       type,
       tier: config.tier,
@@ -140,11 +145,11 @@ function renderStudyView(container, config, currentRating, onComplete) {
       readyAt
     };
     saveJSON(KEYS.DELAYED_MEMORY, session);
-    renderWaitingOrRecallView(container, session, config, currentRating, onComplete);
+    renderWaitingOrRecallView(container, session, config, currentRating, onComplete, scope);
   }
 }
 
-function renderWaitingOrRecallView(container, session, config, currentRating, onComplete) {
+function renderWaitingOrRecallView(container, session, config, currentRating, onComplete, scope) {
   const now = Date.now();
   const isReady = now >= session.readyAt;
 
@@ -174,22 +179,22 @@ function renderWaitingOrRecallView(container, session, config, currentRating, on
       </div>
     `;
 
-    container.querySelector('#testNowBtn').addEventListener('click', () => {
+    scope.listen(container.querySelector('#testNowBtn'), 'click', () => {
       audio.tap();
-      renderRecallTest(container, session, config, currentRating, onComplete);
+      renderRecallTest(container, session, config, currentRating, onComplete, scope);
     });
 
-    container.querySelector('#resetSessionBtn').addEventListener('click', () => {
+    scope.listen(container.querySelector('#resetSessionBtn'), 'click', () => {
       audio.pop();
       saveJSON(KEYS.DELAYED_MEMORY, null);
-      renderStudyView(container, config, currentRating, onComplete);
+      renderStudyView(container, config, currentRating, onComplete, scope);
     });
   } else {
-    renderRecallTest(container, session, config, currentRating, onComplete);
+    renderRecallTest(container, session, config, currentRating, onComplete, scope);
   }
 }
 
-function renderRecallTest(container, session, config, currentRating, onComplete) {
+function renderRecallTest(container, session, config, currentRating, onComplete, scope) {
   const targetItems = session.items;
   const targetWords = targetItems.map((i) => i.word.toLowerCase());
 
@@ -232,9 +237,11 @@ function renderRecallTest(container, session, config, currentRating, onComplete)
   const chips = container.querySelectorAll('.recognition-chip');
   const countEl = container.querySelector('#selectedCount');
   const submitBtn = container.querySelector('#submitRecallBtn');
+  let submitted = false;
 
   chips.forEach((chip) => {
-    chip.addEventListener('click', () => {
+    scope.listen(chip, 'click', () => {
+      if (submitted) return;
       const word = chip.dataset.word;
       if (selectedWords.has(word)) {
         selectedWords.delete(word);
@@ -252,7 +259,10 @@ function renderRecallTest(container, session, config, currentRating, onComplete)
     });
   });
 
-  submitBtn.addEventListener('click', () => {
+  scope.listen(submitBtn, 'click', () => {
+    if (submitted) return;
+    submitted = true;
+    submitBtn.disabled = true;
     const timeTakenMs = Date.now() - startTime;
     let correctCount = 0;
     let falseAlarms = 0;
@@ -308,7 +318,7 @@ function renderRecallTest(container, session, config, currentRating, onComplete)
 
     if (accuracy >= 0.7) {
       audio.chime();
-      burstConfetti();
+      scope.addCleanup(burstConfetti());
       haptics.success();
     } else {
       audio.buzz();
@@ -316,13 +326,13 @@ function renderRecallTest(container, session, config, currentRating, onComplete)
     }
 
     // Render result summary
-    setTimeout(() => {
-      renderSummary(container, session, deltaRes, onComplete);
+    scope.timeout(() => {
+      renderSummary(container, session, deltaRes, onComplete, scope);
     }, 1200);
   });
 }
 
-function renderSummary(container, session, deltaRes, onComplete) {
+function renderSummary(container, session, deltaRes, onComplete, scope) {
   const { correctCount, totalCount, falseAlarms, accuracy } = session.results;
   const hoursSince = ((session.completedAt - session.createdAt) / 3600000).toFixed(1);
 
@@ -357,7 +367,7 @@ function renderSummary(container, session, deltaRes, onComplete) {
     </div>
   `;
 
-  container.querySelector('#doneBtn').addEventListener('click', () => {
+  scope.listen(container.querySelector('#doneBtn'), 'click', () => {
     audio.tap();
     if (onComplete) onComplete();
   });

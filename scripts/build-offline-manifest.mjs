@@ -6,7 +6,7 @@ import path from 'node:path';
 const root = fileURLToPath(new URL('../', import.meta.url));
 async function walk(directory) {
   const entries = await readdir(path.join(root, directory), { withFileTypes: true });
-  return (await Promise.all(entries.map((entry) => {
+  return (await Promise.all(entries.filter((entry) => !entry.name.startsWith('.')).map((entry) => {
     const relative = path.posix.join(directory, entry.name);
     return entry.isDirectory() ? walk(relative) : [relative];
   }))).flat();

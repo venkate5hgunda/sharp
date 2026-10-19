@@ -125,3 +125,11 @@ All data is stored client-side in `localStorage` under the `sharp:` namespace:
   - Evening Recall Notification (`19:30`): Reminds player to test retention from the morning session.
   - Streak Protection Alert: Fires if daily workout is incomplete by evening.
   - Non-intrusive in-app banner toasts serve as automatic fallbacks when system notifications are denied or on unsupported platforms.
+
+## 6. Reliability foundation contracts
+
+Every exercise renderer returns an idempotent cleanup function. `js/core/session-scope.js` owns game timers and listeners and guards callbacks after disposal. The router invokes cleanup before replacing a route; the workout view owns the current exercise cleanup. Result submission and completion callbacks are guarded against repeated execution within a mounted game. Persistent checkpoints and cross-tab transaction ownership are later work.
+
+Calendar keys for new records use the device local day through `js/core/calendar.js`. New streaks carry `local-v1`; existing streaks retain `utc-legacy` to preserve their labels and continuity until migration. Existing history is not retroactively assigned guessed local dates.
+
+`js/core/feature-flags.js` defines disabled inference and remote diagnostics defaults. No model runtime or diagnostics transport is loaded in this delivery. See [Phase 0 verification](docs/PHASE_0_VERIFICATION.md) for evidence and limits.

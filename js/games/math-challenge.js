@@ -1,3 +1,4 @@
+import { createSessionScope, bindChoiceShortcuts } from '../core/session-scope.js';
 import { escapeHTML } from '../content-validation.js';
 // Mental Math & Story Comprehension Challenge
 import { audio } from '../audio.js';
@@ -8,19 +9,21 @@ import { logSessionRound } from '../analytics.js';
 import { getQuestionsByDomain, recordQuestionAttempt } from '../../data/questions-db.js';
 
 export function renderArithmetic(container, onComplete) {
-  renderMathGame(container, 'arithmetic', onComplete);
+  return renderMathGame(container, 'arithmetic', onComplete);
 }
 
 export function renderStoryMath(container, onComplete) {
-  renderMathGame(container, 'story', onComplete);
+  return renderMathGame(container, 'story', onComplete);
 }
 
 export function render(container, onComplete) {
   // Default to arithmetic or story depending on catalog selection
-  renderArithmetic(container, onComplete);
+  return renderArithmetic(container, onComplete);
 }
 
 function renderMathGame(container, mode, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.MATH] || 1000;
   const config = getGameConfig(mode === 'story' ? 'story-math' : 'math-arithmetic', currentRating);
@@ -44,10 +47,11 @@ function renderMathGame(container, mode, onComplete) {
   `;
 
   const stage = container.querySelector('#mathStage');
-  runMathSession(stage, mode, config, currentRating, onComplete);
+  runMathSession(stage, mode, config, currentRating, onComplete, scope);
+  return scope.dispose;
 }
 
-function runMathSession(stage, mode, config, currentRating, onComplete) {
+function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
   const dbStoryProblems = mode === 'story' ? getQuestionsByDomain('math', config.tier, 5) : [];
   const totalQuestions = mode === 'story' ? Math.max(5, dbStoryProblems.length) : 8;
   let questionIndex = 0;
@@ -96,6 +100,7 @@ function runMathSession(stage, mode, config, currentRating, onComplete) {
     function handleChoice(val, btnEl) {
       if (answered) return;
       answered = true;
+      removeKeyListener();
 
       const latency = Date.now() - qStartTime;
       latencies.push(latency);
@@ -123,32 +128,22 @@ function runMathSession(stage, mode, config, currentRating, onComplete) {
 
       btns.forEach((b) => (b.disabled = true));
 
-      setTimeout(() => {
+      scope.timeout(() => {
         questionIndex++;
         showQuestion();
       }, 1000);
     }
 
     btns.forEach((btn) => {
-      btn.addEventListener('click', () => {
+      scope.listen(btn, 'click', () => {
         handleChoice(btn.dataset.val, btn);
       });
     });
 
-    // Keyboard support: 1, 2, 3, 4
-    const keyHandler = (e) => {
-      if (['1', '2', '3', '4'].includes(e.key)) {
-        const idx = parseInt(e.key, 10) - 1;
-        if (btns[idx]) {
-          document.removeEventListener('keydown', keyHandler);
-          handleChoice(btns[idx].dataset.val, btns[idx]);
-        }
-      }
-    };
-    document.addEventListener('keydown', keyHandler, { once: true });
+    const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
   }
 
-  function finishGame() {
+  const finishGame = scope.once(() => {
     const accuracy = correctCount / totalQuestions;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
     const expectedLatency = mode === 'story' ? 14000 : 4500;
@@ -172,7 +167,7 @@ function runMathSession(stage, mode, config, currentRating, onComplete) {
 
     if (accuracy >= 0.75) {
       audio.fanfare();
-      burstConfetti();
+      scope.addCleanup(burstConfetti());
       haptics.celebrate();
     }
 
@@ -205,11 +200,11 @@ function runMathSession(stage, mode, config, currentRating, onComplete) {
       </div>
     `;
 
-    stage.querySelector('#mathDoneBtn').addEventListener('click', () => {
+    scope.listen(stage.querySelector('#mathDoneBtn'), 'click', () => {
       audio.tap();
       if (onComplete) onComplete();
     });
-  }
+  });
 
   showQuestion();
 }

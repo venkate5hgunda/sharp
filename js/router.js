@@ -69,17 +69,17 @@ export class SharpRouter {
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     if (effectiveRoute === 'workout') {
-      WorkoutView.render(this.container, (path) => this.navigateTo(path));
+      this.activeCleanup = WorkoutView.render(this.container, (path) => this.navigateTo(path));
     } else if (effectiveRoute === 'catalog') {
-      CatalogView.render(this.container, (path) => this.navigateTo(path));
+      this.activeCleanup = CatalogView.render(this.container, (path) => this.navigateTo(path));
     } else if (effectiveRoute === 'games' && param) {
       this.mountGame(param);
     } else if (effectiveRoute === 'analytics') {
-      AnalyticsView.render(this.container);
+      this.activeCleanup = AnalyticsView.render(this.container);
     } else if (effectiveRoute === 'backup') {
-      BackupView.render(this.container);
+      this.activeCleanup = BackupView.render(this.container);
     } else if (effectiveRoute === 'settings') {
-      SettingsView.render(this.container);
+      this.activeCleanup = SettingsView.render(this.container);
     } else {
       this.navigateTo('workout');
     }
@@ -109,8 +109,6 @@ export class SharpRouter {
     });
 
     const target = wrapper.querySelector('#gameMountTarget');
-    module.render(target, () => {
-      // On game finish, provide button or option to return
-    });
+    this.activeCleanup = module.render(target, () => this.navigateTo('catalog'));
   }
 }

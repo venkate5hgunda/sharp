@@ -1,3 +1,4 @@
+import { createSessionScope, bindChoiceShortcuts } from '../core/session-scope.js';
 import { escapeHTML } from '../content-validation.js';
 // Deductive Syllogisms & Logic Reasoning Engine
 import { audio } from '../audio.js';
@@ -8,6 +9,8 @@ import { logSessionRound } from '../analytics.js';
 import { getQuestionsByDomain, recordQuestionAttempt } from '../../data/questions-db.js';
 
 export function render(container, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.LOGIC] || 1000;
   const config = getGameConfig('logic-deduction', currentRating);
@@ -26,10 +29,11 @@ export function render(container, onComplete) {
   `;
 
   const stage = container.querySelector('#logicStage');
-  runLogicSession(stage, config, currentRating, onComplete);
+  runLogicSession(stage, config, currentRating, onComplete, scope);
+  return scope.dispose;
 }
 
-function runLogicSession(stage, config, currentRating, onComplete) {
+function runLogicSession(stage, config, currentRating, onComplete, scope) {
   const selectedPuzzles = getQuestionsByDomain('logic', config.tier, 4);
 
   let qIndex = 0;
@@ -84,6 +88,7 @@ function runLogicSession(stage, config, currentRating, onComplete) {
     function handleChoice(val, btnEl) {
       if (answered) return;
       answered = true;
+      removeKeyListener();
 
       const latency = Date.now() - qStartTime;
       latencies.push(latency);
@@ -108,29 +113,20 @@ function runLogicSession(stage, config, currentRating, onComplete) {
       explanationEl.innerHTML = `<strong>${isCorrect ? '✓ Correct Deduction' : '✗ Incorrect'}:</strong> ${escapeHTML(puzzle.explanation)}`;
       explanationEl.removeAttribute('hidden');
 
-      setTimeout(() => {
+      scope.timeout(() => {
         qIndex++;
         showPuzzle();
       }, 2500);
     }
 
     btns.forEach((btn) => {
-      btn.addEventListener('click', () => handleChoice(btn.dataset.val, btn));
+      scope.listen(btn, 'click', () => handleChoice(btn.dataset.val, btn));
     });
 
-    const keyHandler = (e) => {
-      if (['1', '2', '3', '4'].includes(e.key)) {
-        const idx = parseInt(e.key, 10) - 1;
-        if (btns[idx]) {
-          document.removeEventListener('keydown', keyHandler);
-          handleChoice(btns[idx].dataset.val, btns[idx]);
-        }
-      }
-    };
-    document.addEventListener('keydown', keyHandler, { once: true });
+    const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
   }
 
-  function finishGame() {
+  const finishGame = scope.once(() => {
     const accuracy = correctCount / selectedPuzzles.length;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
     const deltaRes = calculateRatingDelta(currentRating, config.tier, accuracy, avgLatency, 10000);
@@ -153,7 +149,7 @@ function runLogicSession(stage, config, currentRating, onComplete) {
 
     if (accuracy >= 0.75) {
       audio.fanfare();
-      burstConfetti();
+      scope.addCleanup(burstConfetti());
       haptics.celebrate();
     }
 
@@ -186,11 +182,11 @@ function runLogicSession(stage, config, currentRating, onComplete) {
       </div>
     `;
 
-    stage.querySelector('#logicDoneBtn').addEventListener('click', () => {
+    scope.listen(stage.querySelector('#logicDoneBtn'), 'click', () => {
       audio.tap();
       if (onComplete) onComplete();
     });
-  }
+  });
 
   showPuzzle();
 }

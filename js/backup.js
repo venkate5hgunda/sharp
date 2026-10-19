@@ -1,3 +1,4 @@
+import { localDayKey } from './core/calendar.js';
 // Backup & Schema Migration Engine for Sharp — Single-File JSON Export/Import with Checksum
 import { loadJSON, saveJSON, getAllSharpData, replaceSharpData, KEYS, CURRENT_SCHEMA_VERSION } from './storage.js';
 import { exportHydratedDataset } from '../data/questions-db.js';
@@ -18,7 +19,7 @@ export function downloadQuestionDatasetFile() {
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = localDayKey();
   a.href = url;
   a.download = `sharp-questions-hydrated-${dateStr}.json`;
   document.body.appendChild(a);
@@ -31,7 +32,7 @@ export function downloadQuestionDatasetFile() {
 export function generateBackupPayload() {
   const allData = getAllSharpData();
   const exportTimestamp = Date.now();
-  const exportDate = new Date().toISOString().slice(0, 10);
+  const exportDate = localDayKey(exportTimestamp);
 
   const payloadCore = {
     appName: 'sharp',
@@ -56,7 +57,7 @@ export function downloadBackupFile() {
   const blob = new Blob([jsonStr], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const dateStr = localDayKey();
   a.href = url;
   a.download = `sharp-backup-${dateStr}.json`;
   document.body.appendChild(a);
@@ -71,14 +72,14 @@ export function downloadBackupFile() {
 
 export function markBackupCompleted() {
   const meta = loadJSON(KEYS.BACKUP_META, {});
-  meta.lastBackupDate = new Date().toISOString().slice(0, 10);
+  meta.lastBackupDate = localDayKey();
   meta.lastBackupTimestamp = Date.now();
   saveJSON(KEYS.BACKUP_META, meta);
 }
 
 export function shouldRemindBackup() {
   const meta = loadJSON(KEYS.BACKUP_META, {});
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDayKey();
   return meta.lastBackupDate !== today;
 }
 
@@ -99,6 +100,7 @@ function validateBackupData(data) {
   if (Object.entries(ratings).some(([key, value]) => !['memory', 'math', 'logic', 'comprehension', 'focus'].includes(key) ||
       typeof value !== 'number' || value < 600 || value > 2500)) return 'Invalid ratings.';
   const streaks = data.streaks || {};
+  if (streaks.calendarPolicy !== undefined && !['utc-legacy', 'local-v1'].includes(streaks.calendarPolicy)) return 'Invalid calendar policy.';
   for (const key of ['current', 'longest']) {
     if (streaks[key] !== undefined && (!Number.isInteger(streaks[key]) || streaks[key] < 0)) return 'Invalid streak count.';
   }
@@ -199,14 +201,20 @@ export function applyBackup(data, mode = 'replace') {
     for (const [domain, rating] of Object.entries(data.ratings || {})) ratings[domain] = Math.max(ratings[domain] || 1000, rating);
     const a = current.streaks || {};
     const b = data.streaks || {};
+    if (a.lastWorkoutDate && b.lastWorkoutDate && (a.calendarPolicy || 'utc-legacy') !== (b.calendarPolicy || 'utc-legacy')) {
+      return { success: false, error: 'These streaks use different calendar policies. Export current progress before choosing a replacement restore.' };
+    }
+    const calendarPolicy = a.lastWorkoutDate ? a.calendarPolicy || 'utc-legacy'
+      : b.lastWorkoutDate ? b.calendarPolicy || 'utc-legacy' : a.calendarPolicy || b.calendarPolicy || 'local-v1';
     const questions = new Map((current.custom_questions || []).map((question) => [question.id, question]));
     for (const question of data.custom_questions || []) if (!questions.has(question.id)) questions.set(question.id, question);
     next = { ...data, ...current, ratings, session_history: [...history.values()], custom_questions: [...questions.values()],
-      streaks: { current: Math.max(a.current || 0, b.current || 0), longest: Math.max(a.longest || 0, b.longest || 0),
+      streaks: { calendarPolicy,
+        current: Math.max(a.current || 0, b.current || 0), longest: Math.max(a.longest || 0, b.longest || 0),
         lastWorkoutDate: a.lastWorkoutDate || b.lastWorkoutDate || null, history: { ...(b.history || {}), ...(a.history || {}) } } };
   }
   next.schema_version = CURRENT_SCHEMA_VERSION;
-  next.backup_meta = { ...(next.backup_meta || {}), lastBackupDate: new Date().toISOString().slice(0, 10), lastBackupTimestamp: Date.now() };
+  next.backup_meta = { ...(next.backup_meta || {}), lastBackupDate: localDayKey(), lastBackupTimestamp: Date.now() };
   const nextError = validateBackupData(next);
   if (nextError) return { success: false, error: nextError };
   return replaceSharpData(next);

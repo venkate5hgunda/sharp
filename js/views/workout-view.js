@@ -1,11 +1,10 @@
 // Daily Workout View — Curated 4-Exercise Cognitive Fitness Circuit
-import { loadJSON, saveJSON, KEYS } from '../storage.js';
+import { createSessionScope } from '../core/session-scope.js';
 import { audio } from '../audio.js';
 import { burstConfetti } from '../celebration.js';
-import { getStreaks, recordWorkoutCompletion } from '../analytics.js';
+import { getStreaks, getWorkoutDay, recordWorkoutCompletion } from '../analytics.js';
 import { shouldRemindBackup } from '../backup.js';
 
-import * as DelayedMemoryGame from '../games/delayed-memory.js';
 import * as MathChallengeGame from '../games/math-challenge.js';
 import * as LogicDeductionGame from '../games/logic-deduction.js';
 import * as ComprehensionGame from '../games/comprehension-inference.js';
@@ -19,8 +18,9 @@ const WORKOUT_CIRCUIT = [
 ];
 
 export function render(container, navigateTo) {
+  const scope = createSessionScope();
   const streaks = getStreaks();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getWorkoutDay(streaks);
   const isDoneToday = streaks.lastWorkoutDate === today;
 
   container.innerHTML = `
@@ -55,7 +55,7 @@ export function render(container, navigateTo) {
   `;
 
   if (shouldRemindBackup() && isDoneToday) {
-    container.querySelector('#backupBannerBtn')?.addEventListener('click', () => {
+    scope.listen(container.querySelector('#backupBannerBtn'), 'click', () => {
       audio.tap();
       navigateTo('backup');
     });
@@ -63,20 +63,21 @@ export function render(container, navigateTo) {
 
   const stage = container.querySelector('#workoutStage');
 
-  stage.querySelector('#startWorkoutBtn')?.addEventListener('click', () => {
+  if (stage.querySelector('#startWorkoutBtn')) scope.listen(stage.querySelector('#startWorkoutBtn'), 'click', () => {
     audio.tap();
-    startCircuit(stage, 0, navigateTo);
+    startCircuit(stage, 0, navigateTo, scope);
   });
 
-  stage.querySelector('#replayWorkoutBtn')?.addEventListener('click', () => {
+  if (stage.querySelector('#replayWorkoutBtn')) scope.listen(stage.querySelector('#replayWorkoutBtn'), 'click', () => {
     audio.tap();
-    startCircuit(stage, 0, navigateTo);
+    startCircuit(stage, 0, navigateTo, scope);
   });
 
-  stage.querySelector('#morningDropBtn')?.addEventListener('click', () => {
+  if (stage.querySelector('#morningDropBtn')) scope.listen(stage.querySelector('#morningDropBtn'), 'click', () => {
     audio.tap();
     navigateTo('games/delayed-memory');
   });
+  return scope.dispose;
 }
 
 function renderIntroCard() {
@@ -138,12 +139,13 @@ function renderCompletedCard(streaks) {
   `;
 }
 
-function startCircuit(container, stepIndex, navigateTo) {
+function startCircuit(container, stepIndex, navigateTo, scope) {
+  if (!scope.active) return;
   if (stepIndex >= WORKOUT_CIRCUIT.length) {
     // Finished all 4 exercises!
     const { streaks } = recordWorkoutCompletion();
     audio.streak();
-    burstConfetti();
+    scope.addCleanup(burstConfetti());
 
     container.innerHTML = `
       <div class="workout-card is-completed">
@@ -167,7 +169,7 @@ function startCircuit(container, stepIndex, navigateTo) {
       </div>
     `;
 
-    container.querySelector('#viewAnalyticsBtn').addEventListener('click', () => {
+    scope.listen(container.querySelector('#viewAnalyticsBtn'), 'click', () => {
       audio.tap();
       navigateTo('analytics');
     });
@@ -190,7 +192,10 @@ function startCircuit(container, stepIndex, navigateTo) {
   `;
 
   const host = container.querySelector('#exerciseHost');
-  currentExercise.module.render(host, () => {
-    startCircuit(container, stepIndex + 1, navigateTo);
+  let release = () => {};
+  const cleanup = currentExercise.module.render(host, () => {
+    release();
+    startCircuit(container, stepIndex + 1, navigateTo, scope);
   });
+  release = scope.addCleanup(cleanup);
 }

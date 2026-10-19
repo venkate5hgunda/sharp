@@ -157,3 +157,12 @@ test('interrupted restore recovers on next access, including newly added keys', 
 test('plain text escaping protects quotes and markup in rendered choices', () => {
   assert.equal(escapeHTML('a" onclick="x <b>&\'z'), 'a&quot; onclick=&quot;x &lt;b&gt;&amp;&#39;z');
 });
+
+test('restore preserves calendar policy and refuses to combine incompatible streak calendars', () => {
+  const local = { calendarPolicy: 'local-v1', current: 3, longest: 3, lastWorkoutDate: '2026-10-19', history: { '2026-10-19': 1 } };
+  assert.equal(applyBackup({ streaks: local }, 'merge').success, true);
+  assert.equal(loadJSON('streaks').calendarPolicy, 'local-v1');
+  const before = getAllSharpData();
+  assert.equal(applyBackup({ streaks: { current: 4, longest: 4, lastWorkoutDate: '2026-10-20' } }, 'merge').success, false);
+  assert.deepEqual(getAllSharpData(), before);
+});

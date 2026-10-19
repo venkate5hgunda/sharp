@@ -1,3 +1,4 @@
+import { createSessionScope } from '../core/session-scope.js';
 // Spatial Corsi Span — Visuospatial Working Memory Engine
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
@@ -6,6 +7,8 @@ import { getDomainRatings, saveDomainRatings, calculateRatingDelta, getGameConfi
 import { logSessionRound } from '../analytics.js';
 
 export function render(container, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.FOCUS] || 1000;
   const config = getGameConfig('corsi-span', currentRating);
@@ -24,10 +27,11 @@ export function render(container, onComplete) {
   `;
 
   const stage = container.querySelector('#corsiStage');
-  runCorsiSession(stage, config, currentRating, onComplete);
+  runCorsiSession(stage, config, currentRating, onComplete, scope);
+  return scope.dispose;
 }
 
-function runCorsiSession(stage, config, currentRating, onComplete) {
+function runCorsiSession(stage, config, currentRating, onComplete, scope) {
   const blockCount = config.blockSize; // 7 or 9
   let currentSpan = config.startSpan; // typically 3 or 4
   let trial = 1;
@@ -80,7 +84,7 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
 
     // Flash sequence
     let flashIdx = 0;
-    setTimeout(flashNext, 600);
+    scope.timeout(flashNext, 600);
 
     function flashNext() {
       if (flashIdx >= sequence.length) {
@@ -96,10 +100,10 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
         audio.scheduleTone(360 + targetId * 60, 0.18, 'triangle', 0.25);
         haptics.tap();
 
-        setTimeout(() => {
+        scope.timeout(() => {
           targetEl.classList.remove('is-lit');
           flashIdx++;
-          setTimeout(flashNext, 200);
+          scope.timeout(flashNext, 200);
         }, config.flashDurationMs);
       }
     }
@@ -109,11 +113,13 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
       statusEl.classList.add('is-active');
 
       const userInputs = [];
+      let submitted = false;
       const trialStartTime = Date.now();
 
       blockEls.forEach((btn) => {
         btn.disabled = false;
-        btn.addEventListener('click', () => {
+        scope.listen(btn, 'click', () => {
+          if (submitted) return;
           const id = parseInt(btn.dataset.id, 10);
           userInputs.push(id);
 
@@ -121,10 +127,11 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
           audio.scheduleTone(360 + id * 60, 0.12, 'sine', 0.2);
           haptics.tap();
 
-          setTimeout(() => btn.classList.remove('is-active-tap'), 200);
+          scope.timeout(() => btn.classList.remove('is-active-tap'), 200);
 
           const curPos = userInputs.length - 1;
           if (userInputs[curPos] !== sequence[curPos]) {
+            submitted = true;
             // Immediate error
             audio.buzz();
             haptics.warning();
@@ -133,13 +140,14 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
             blockEls.forEach((b) => (b.disabled = true));
             latencies.push(Date.now() - trialStartTime);
 
-            setTimeout(() => {
+            scope.timeout(() => {
               trial++;
               // Retain or reduce span slightly on failure
               if (currentSpan > 3) currentSpan--;
               startTrial();
             }, 1200);
           } else if (userInputs.length === sequence.length) {
+            submitted = true;
             // Completed trial successfully!
             successCount++;
             audio.chime();
@@ -149,7 +157,7 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
             blockEls.forEach((b) => (b.disabled = true));
             latencies.push(Date.now() - trialStartTime);
 
-            setTimeout(() => {
+            scope.timeout(() => {
               trial++;
               // Increase span on success
               currentSpan++;
@@ -161,7 +169,7 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
     }
   }
 
-  function finishGame() {
+  const finishGame = scope.once(() => {
     const accuracy = successCount / maxTrials;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / (latencies.length || 1);
     const deltaRes = calculateRatingDelta(currentRating, config.tier, accuracy, avgLatency, 6000);
@@ -184,7 +192,7 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
 
     if (accuracy >= 0.6) {
       audio.fanfare();
-      burstConfetti();
+      scope.addCleanup(burstConfetti());
       haptics.celebrate();
     }
 
@@ -217,11 +225,11 @@ function runCorsiSession(stage, config, currentRating, onComplete) {
       </div>
     `;
 
-    stage.querySelector('#corsiDoneBtn').addEventListener('click', () => {
+    scope.listen(stage.querySelector('#corsiDoneBtn'), 'click', () => {
       audio.tap();
       if (onComplete) onComplete();
     });
-  }
+  });
 
   startTrial();
 }

@@ -7,9 +7,9 @@ Started: 2026-10-19. Reference: [implementation analysis](REDESIGN_IMPLEMENTATIO
 | Stage | Scope | Status |
 | --- | --- | --- |
 | Planning baseline | Commit the reviewed analysis and track delivery | Pushed (`afdcb4d`) |
-| Offline integrity | Complete precache dependency coverage, preserve unrelated caches, coherent updates | Complete |
-| Data integrity | Strict backup/import validation and safe failure handling | Complete |
-| Lifecycle foundation | Scoped game resources, route cleanup, stable IDs, local calendar, disabled feature flags | In progress |
+| Offline integrity | Complete precache dependency coverage, preserve unrelated caches, coherent updates | Pushed (`089f445`) |
+| Data integrity | Strict backup/import validation and safe failure handling | Pushed (`2bb83c4`) |
+| Lifecycle foundation | Scoped game resources, route cleanup, stable IDs, local calendar, disabled feature flags | Complete |
 
 Each implementation stage is tested and committed separately, then pushed to `origin/main`. No model downloads or remote telemetry are enabled by this foundation release.
 
@@ -20,5 +20,6 @@ The UX/session redesign, IndexedDB migration, expanded curriculum, attempt-level
 ## Verification log
 
 - Planning baseline: existing Node suite passed 16/16; documentation links, JSON examples, and Markdown fences validated.
-- Offline integrity: 19/19 Node tests pass, including dependency coverage, cache ownership and offline snapshot behavior. Manifest freshness is enforced in CI. Browser/device offline qualification remains a later check.
+- Offline integrity: 19/19 Node tests pass, including dependency coverage, cache ownership and offline snapshot behavior. Manifest freshness is enforced in CI. Desktop Chrome installed-shell smoke checks are recorded below; physical-device qualification remains pending.
 - Data integrity: 28/28 Node tests pass. Regression coverage includes checksum failures, unsupported schemas, invalid metrics and content, numeric-zero answers, atomic pack rejection, restore rollback after failed writes, full-quota preservation, and interrupted-restore recovery. Imported choices and memory text are escaped at render time.
+- Lifecycle foundation: 39/39 Node tests pass. All seven game entry points now return scoped cleanup. Desktop Chrome checks cover all game mounts, keyboard input, arithmetic completion, workout cancellation, and cached reload/content with the local server stopped. See [verification and limits](PHASE_0_VERIFICATION.md).

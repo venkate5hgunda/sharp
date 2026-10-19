@@ -1,3 +1,4 @@
+import { localDayKey } from '../js/core/calendar.js';
 // Central Question Dataset Engine & Hydration Layer for Sharp
 // Unifies Logic, Math, Comprehension, and Memory datasets with continuous metadata hydration
 
@@ -148,7 +149,7 @@ export function importQuestionPack(payload) {
       ...q,
       metadata: {
         version: q.metadata?.version || 1,
-        dateAdded: q.metadata?.dateAdded || new Date().toISOString().slice(0, 10),
+        dateAdded: q.metadata?.dateAdded || localDayKey(),
         timesServed: 0,
         userAccuracy: null,
         ...(isRecord(q.metadata) ? q.metadata : {})

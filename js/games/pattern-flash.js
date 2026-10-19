@@ -1,3 +1,4 @@
+import { createSessionScope } from '../core/session-scope.js';
 // Pattern Flash & Interference — Visual Working Memory under Retroactive Distraction
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
@@ -6,6 +7,8 @@ import { getDomainRatings, saveDomainRatings, calculateRatingDelta, getGameConfi
 import { logSessionRound } from '../analytics.js';
 
 export function render(container, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.FOCUS] || 1000;
   const config = getGameConfig('pattern-flash', currentRating);
@@ -24,7 +27,8 @@ export function render(container, onComplete) {
   `;
 
   const stage = container.querySelector('#pfStage');
-  startSequence(stage, config, currentRating, onComplete);
+  startSequence(stage, config, currentRating, onComplete, scope);
+  return scope.dispose;
 }
 
 function generatePattern(gridSize, cellCount) {
@@ -36,7 +40,7 @@ function generatePattern(gridSize, cellCount) {
   return Array.from(indices).sort((a, b) => a - b);
 }
 
-function startSequence(stage, config, currentRating, onComplete) {
+function startSequence(stage, config, currentRating, onComplete, scope) {
   const { gridSize, patternCount, distractorCount, displayMs } = config;
   const activeCells = gridSize === 3 ? 4 : gridSize === 4 ? 6 : 8;
 
@@ -77,7 +81,7 @@ function startSequence(stage, config, currentRating, onComplete) {
     audio.flash();
     haptics.tap();
 
-    setTimeout(() => {
+    scope.timeout(() => {
       currentTargetIndex++;
       showNextTarget();
     }, displayMs + 300);
@@ -94,7 +98,7 @@ function startSequence(stage, config, currentRating, onComplete) {
     `;
 
     audio.distract();
-    setTimeout(showNextDistractor, 1400);
+    scope.timeout(showNextDistractor, 1400);
 
     function showNextDistractor() {
       if (distractorIndex >= distractors.length) {
@@ -116,7 +120,7 @@ function startSequence(stage, config, currentRating, onComplete) {
       haptics.warning();
 
       distractorIndex++;
-      setTimeout(showNextDistractor, 750);
+      scope.timeout(showNextDistractor, 750);
     }
   }
 
@@ -139,6 +143,7 @@ function startSequence(stage, config, currentRating, onComplete) {
       const targetIdx = recallIndices[recallStep];
       const targetPattern = targetPatterns[targetIdx];
       const userSelected = new Set();
+      let submitted = false;
 
       stage.innerHTML = `
         <div class="reconstruction-container">
@@ -164,7 +169,8 @@ function startSequence(stage, config, currentRating, onComplete) {
       const cells = gridEl.querySelectorAll('.interactive-cell');
 
       cells.forEach((cell) => {
-        cell.addEventListener('click', () => {
+        scope.listen(cell, 'click', () => {
+          if (submitted) return;
           const idx = parseInt(cell.dataset.idx, 10);
           if (userSelected.has(idx)) {
             userSelected.delete(idx);
@@ -179,13 +185,19 @@ function startSequence(stage, config, currentRating, onComplete) {
         });
       });
 
-      stage.querySelector('#clearGridBtn').addEventListener('click', () => {
+      scope.listen(stage.querySelector('#clearGridBtn'), 'click', () => {
+        if (submitted) return;
         userSelected.clear();
         cells.forEach((c) => c.classList.remove('is-active'));
         audio.pop();
       });
 
-      stage.querySelector('#submitGridBtn').addEventListener('click', () => {
+      scope.listen(stage.querySelector('#submitGridBtn'), 'click', () => {
+        if (submitted) return;
+        submitted = true;
+        stage.querySelector('#submitGridBtn').disabled = true;
+        stage.querySelector('#clearGridBtn').disabled = true;
+        cells.forEach((cell) => { cell.disabled = true; });
         // Calculate cell match
         const userArr = Array.from(userSelected);
         let truePositives = 0;
@@ -217,14 +229,14 @@ function startSequence(stage, config, currentRating, onComplete) {
         if (f1 >= 0.75) audio.chime();
         else audio.buzz();
 
-        setTimeout(() => {
+        scope.timeout(() => {
           recallStep++;
           showRecallPrompt();
         }, 1200);
       });
     }
 
-    function finishGame() {
+    const finishGame = scope.once(() => {
       const totalTimeMs = Date.now() - startTime;
       const avgAccuracy = accuracies.reduce((a, b) => a + b, 0) / accuracies.length;
       const deltaRes = calculateRatingDelta(currentRating, config.tier, avgAccuracy, totalTimeMs / accuracies.length, 12000);
@@ -247,7 +259,7 @@ function startSequence(stage, config, currentRating, onComplete) {
 
       if (avgAccuracy >= 0.7) {
         audio.fanfare();
-        burstConfetti();
+        scope.addCleanup(burstConfetti());
         haptics.celebrate();
       }
 
@@ -280,11 +292,11 @@ function startSequence(stage, config, currentRating, onComplete) {
         </div>
       `;
 
-      stage.querySelector('#pfFinishBtn').addEventListener('click', () => {
+      scope.listen(stage.querySelector('#pfFinishBtn'), 'click', () => {
         audio.tap();
         if (onComplete) onComplete();
       });
-    }
+    });
 
     showRecallPrompt();
   }

@@ -1,3 +1,4 @@
+import { createSessionScope, bindChoiceShortcuts } from '../core/session-scope.js';
 import { escapeHTML } from '../content-validation.js';
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
@@ -7,6 +8,8 @@ import { logSessionRound } from '../analytics.js';
 import { getQuestionsByDomain, recordQuestionAttempt } from '../../data/questions-db.js';
 
 export function render(container, onComplete) {
+  const scope = createSessionScope();
+  onComplete = scope.once(onComplete || (() => {}));
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.COMPREHENSION] || 1000;
   const config = getGameConfig('comprehension-inference', currentRating);
@@ -25,10 +28,11 @@ export function render(container, onComplete) {
   `;
 
   const stage = container.querySelector('#compStage');
-  runComprehensionSession(stage, config, currentRating, onComplete);
+  runComprehensionSession(stage, config, currentRating, onComplete, scope);
+  return scope.dispose;
 }
 
-function runComprehensionSession(stage, config, currentRating, onComplete) {
+function runComprehensionSession(stage, config, currentRating, onComplete, scope) {
   const selected = getQuestionsByDomain('comprehension', config.tier, 3);
 
   let qIndex = 0;
@@ -80,6 +84,7 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
     function handleChoice(val, btnEl) {
       if (answered) return;
       answered = true;
+      removeKeyListener();
 
       const latency = Date.now() - qStartTime;
       latencies.push(latency);
@@ -104,29 +109,20 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
       explEl.innerHTML = `<strong>${isCorrect ? '✓ Valid Inference' : '✗ Incorrect'}:</strong> ${escapeHTML(item.explanation)}`;
       explEl.removeAttribute('hidden');
 
-      setTimeout(() => {
+      scope.timeout(() => {
         qIndex++;
         showQuestion();
       }, 2500);
     }
 
     btns.forEach((btn) => {
-      btn.addEventListener('click', () => handleChoice(btn.dataset.val, btn));
+      scope.listen(btn, 'click', () => handleChoice(btn.dataset.val, btn));
     });
 
-    const keyHandler = (e) => {
-      if (['1', '2', '3', '4'].includes(e.key)) {
-        const idx = parseInt(e.key, 10) - 1;
-        if (btns[idx]) {
-          document.removeEventListener('keydown', keyHandler);
-          handleChoice(btns[idx].dataset.val, btns[idx]);
-        }
-      }
-    };
-    document.addEventListener('keydown', keyHandler, { once: true });
+    const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
   }
 
-  function finishGame() {
+  const finishGame = scope.once(() => {
     const accuracy = correctCount / selected.length;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
     const deltaRes = calculateRatingDelta(currentRating, config.tier, accuracy, avgLatency, 18000);
@@ -149,7 +145,7 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
 
     if (accuracy >= 0.7) {
       audio.fanfare();
-      burstConfetti();
+      scope.addCleanup(burstConfetti());
       haptics.celebrate();
     }
 
@@ -182,11 +178,11 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
       </div>
     `;
 
-    stage.querySelector('#compDoneBtn').addEventListener('click', () => {
+    scope.listen(stage.querySelector('#compDoneBtn'), 'click', () => {
       audio.tap();
       if (onComplete) onComplete();
     });
-  }
+  });
 
   showQuestion();
 }

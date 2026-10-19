@@ -1,3 +1,5 @@
+import { createId } from './core/identity.js';
+import { localDayKey, shiftLocalDay } from './core/calendar.js';
 // Analytics & Metrics Engine for Sharp — Radar Charts, Trend Lines, Heatmaps & Domain Insights
 import { loadJSON, saveJSON, KEYS } from './storage.js';
 import { getDomainRatings, getOverallSharpScore, DOMAINS } from './adaptive-engine.js';
@@ -8,8 +10,9 @@ export function getSessionHistory() {
 
 export function logSessionRound({ gameId, domain, tier, accuracy, questionsCount, correctCount, averageLatencyMs, ratingBefore, ratingAfter }) {
   const history = getSessionHistory();
+  const timestamp = Date.now();
   const round = {
-    id: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    id: createId('sess'),
     gameId,
     domain,
     tier,
@@ -20,8 +23,9 @@ export function logSessionRound({ gameId, domain, tier, accuracy, questionsCount
     ratingBefore,
     ratingAfter,
     delta: ratingAfter - ratingBefore,
-    timestamp: Date.now(),
-    date: new Date().toISOString().slice(0, 10)
+    timestamp,
+    date: localDayKey(timestamp),
+    calendarPolicy: 'local-v1'
   };
 
   history.push(round);
@@ -32,19 +36,28 @@ export function logSessionRound({ gameId, domain, tier, accuracy, questionsCount
 }
 
 export function getStreaks() {
-  const stored = loadJSON(KEYS.STREAKS, {
+  const stored = loadJSON(KEYS.STREAKS, null);
+  if (stored) return { ...stored, calendarPolicy: stored.calendarPolicy || 'utc-legacy' };
+  return {
     current: 0,
     longest: 0,
     lastWorkoutDate: null,
-    history: {}
-  });
-  return stored;
+    history: {},
+    calendarPolicy: 'local-v1'
+  };
 }
 
-export function recordWorkoutCompletion() {
+// Keep existing UTC streaks intact until a versioned migration can reconcile them.
+export function getWorkoutDay(streaks = getStreaks(), now = new Date()) {
+  return streaks.calendarPolicy === 'utc-legacy' ? new Date(now).toISOString().slice(0, 10) : localDayKey(now);
+}
+
+export function recordWorkoutCompletion(now = new Date()) {
   const streaks = getStreaks();
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today = getWorkoutDay(streaks, now);
+  const yesterday = streaks.calendarPolicy === 'utc-legacy'
+    ? getWorkoutDay(streaks, new Date(new Date(now).getTime() - 86400000))
+    : localDayKey(shiftLocalDay(now, -1));
 
   if (streaks.lastWorkoutDate === today) {
     // Already recorded today, update workout count
@@ -193,7 +206,7 @@ export function renderTrendLineSVG(days = 14, width = 500, height = 180) {
 
   const dateList = [];
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000).toISOString().slice(0, 10);
+    const d = localDayKey(shiftLocalDay(new Date(), -i));
     dateList.push(d);
   }
 
@@ -259,8 +272,8 @@ export function renderActivityHeatmapHTML() {
   const cells = [];
 
   for (let i = 34; i >= 0; i--) {
-    const d = new Date(Date.now() - i * 86400000);
-    const dateStr = d.toISOString().slice(0, 10);
+    const d = shiftLocalDay(today, -i);
+    const dateStr = localDayKey(d);
     const count = history[dateStr] || 0;
     const isToday = i === 0;
 

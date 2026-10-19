@@ -17,6 +17,7 @@ export function burstConfetti(container = document.body, count = 60) {
   container.appendChild(canvas);
 
   const ctx = canvas.getContext('2d');
+  if (!ctx) { canvas.remove(); return; }
   const dpr = window.devicePixelRatio || 1;
   const width = window.innerWidth;
   const height = window.innerHeight;
@@ -42,7 +43,14 @@ export function burstConfetti(container = document.body, count = 60) {
   });
 
   let animationFrame;
+  let active = true;
+  function dispose() {
+    active = false;
+    cancelAnimationFrame(animationFrame);
+    canvas.remove();
+  }
   function update() {
+    if (!active) return;
     ctx.clearRect(0, 0, width, height);
     let activeCount = 0;
 
@@ -69,10 +77,10 @@ export function burstConfetti(container = document.body, count = 60) {
     if (activeCount > 0) {
       animationFrame = requestAnimationFrame(update);
     } else {
-      cancelAnimationFrame(animationFrame);
-      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      dispose();
     }
   }
 
   animationFrame = requestAnimationFrame(update);
+  return dispose;
 }
