@@ -76,6 +76,8 @@ python3 -m http.server 8080
 # Open http://localhost:8080
 ```
 
+After changing app code, assets, or datasets, run `npm run build:offline` before committing. The generated offline manifest includes the complete local dependency graph and changes the shell cache version when its contents change. CI checks its freshness. Service worker updates wait until existing app tabs close; they do not replace individual modules during an active workout.
+
 ---
 
 ## Automated Test Suite

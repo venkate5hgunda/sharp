@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 5. Register PWA Service Worker
   if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
+    navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' })
       .then((reg) => {
         // Check for updates
         reg.addEventListener('updatefound', () => {

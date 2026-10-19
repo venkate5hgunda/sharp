@@ -116,7 +116,8 @@ All data is stored client-side in `localStorage` under the `sharp:` namespace:
 
 - **Service Worker (`sw.js`)**:
   - Precaches all application shell assets, CSS, ES modules, icons, and dataset files.
-  - Cache-first strategy with background revalidation for maximum offline speed.
+  - A generated, content-versioned manifest precaches the complete local application and datasets. Each worker serves one shell snapshot; updates wait for old tabs to close rather than revalidating individual modules mid-session.
+  - Cache cleanup is limited to obsolete shell caches for this scope and known legacy Sharp caches. Model caches and sibling applications are preserved.
 - **Web Notifications API**:
   - Morning Drop Notification (`08:30`): Alerts player that daily items are ready to study.
   - Evening Recall Notification (`19:30`): Reminds player to test retention from the morning session.

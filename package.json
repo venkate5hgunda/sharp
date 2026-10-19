@@ -6,6 +6,8 @@
   "type": "module",
   "description": "Sharp — Adaptive cognitive fitness PWA for memory, logic, math, and comprehension.",
   "scripts": {
+    "build:offline": "node scripts/build-offline-manifest.mjs",
+    "check:offline": "node scripts/build-offline-manifest.mjs --check",
     "test": "node --test test/*.test.js",
     "start": "python3 -m http.server 8080"
   }
