@@ -67,9 +67,12 @@ Tokens are defined in `css/styles.css` on `:root` and adapted under `[data-theme
 
 ## 5. Accessibility & Inclusivity
 
-- **Contrast**: All text meets WCAG AA standards (minimum 4.5:1 for normal text, 3:1 for large text).
-- **Reduced Motion**: Respects `prefers-reduced-motion: reduce`. Disables canvas confetti bursts and reduces card animations.
-- **Keyboard Navigation**:
-  - Number keys `1`, `2`, `3`, `4` select multiple-choice options immediately.
-  - `Escape` dismisses open modals.
-  - Full keyboard focus rings with visible contrast.
+- **Contrast**: Core text and interface pairings strictly satisfy WCAG AA standards (minimum 4.5:1 for normal text, 3:1 for large text and focus states), verified via automated unit test suite (`test/contrast.test.js`).
+- **Reduced Motion**: Fully respects `prefers-reduced-motion: reduce` across CSS transitions, card elevations, button transforms, confetti particle bursts, and keyframe animations.
+- **Keyboard Navigation & Focus**:
+  - Visible focus rings (`:focus-visible`) across all interactive controls (`button`, `a`, `input`, `select`, `summary`, `[tabindex]`) using `--primary` outlines and secondary `--primary-light` focus glows.
+  - Accessible skip link (`.skip-link`) for keyboard navigation.
+  - Keyboard shortcuts (`1`, `2`, `3`, `4` option selection; `Escape` modal dismissal).
+- **Touch Ergonomics & Micro-Interactions**:
+  - Touch targets maintain a minimum 42–44px hit area with `touch-action: manipulation` and suppressed tap highlights.
+  - Tactile depression (`:active`) feedback on buttons (`scale(0.96)`), icon controls (`scale(0.94)`), filter chips, and interactive game cells (`scale(0.95)`).

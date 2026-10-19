@@ -6,6 +6,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 44px;
   padding: 0.6rem 1.25rem;
   font-family: var(--font-heading);
   font-size: 0.95rem;
@@ -20,6 +21,11 @@
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+  transition: transform 0.08s ease, background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .btn-primary {
@@ -330,6 +336,10 @@
   border-color: var(--border-strong);
 }
 
+.filter-chip:active {
+  transform: scale(0.95);
+}
+
 .filter-chip.is-active {
   background: var(--primary);
   color: #ffffff;
@@ -357,6 +367,10 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow);
   border-color: rgba(99, 102, 241, 0.4);
+}
+
+.game-catalog-card:active {
+  transform: translateY(0) scale(0.99);
 }
 
 .card-top {
@@ -720,6 +734,10 @@
   background: var(--primary-light);
 }
 
+.drop-zone:active {
+  transform: scale(0.99);
+}
+
 .drop-icon {
   font-size: 2.5rem;
   margin-bottom: 0.5rem;
@@ -899,5 +917,21 @@ input:checked + .slider:before {
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduced motion: disable non-essential transforms and animations */
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled), .icon-btn:active, .filter-chip:active,
+  .game-catalog-card:active, .drop-zone:active {
+    transform: none !important;
+  }
+  .in-app-toast, .in-app-prompt-banner {
+    animation: none !important;
+    transform: none !important;
+  }
+  .in-app-toast.is-fadeout {
+    opacity: 0;
+    transform: none;
+  }
 }
 
