@@ -6,6 +6,7 @@ import { MATH_PROBLEMS } from './domains/math-problems.js';
 import { COMPREHENSION_PASSAGES } from './domains/comprehension-passages.js';
 import { MEMORY_CLUSTERS } from './domains/memory-clusters.js';
 import { loadJSON, saveJSON } from '../js/storage.js';
+import { isRecord, validateQuestion, MAX_IMPORT_BYTES } from '../js/content-validation.js';
 
 const STATS_KEY = 'question_stats';
 const CUSTOM_QUESTIONS_KEY = 'custom_questions';
@@ -14,17 +15,20 @@ const CUSTOM_QUESTIONS_KEY = 'custom_questions';
  * Returns all built-in and user-imported questions.
  */
 export function getAllQuestions() {
-  const custom = loadJSON(CUSTOM_QUESTIONS_KEY, []);
+  const storedCustom = loadJSON(CUSTOM_QUESTIONS_KEY, []);
+  const custom = Array.isArray(storedCustom) ? storedCustom : [];
   const base = [
     ...LOGIC_PUZZLES,
     ...MATH_PROBLEMS,
     ...COMPREHENSION_PASSAGES
   ];
 
-  // Merge base with custom, where custom can override or append by ID
+  // Imported questions may append, but never replace curated built-in IDs.
   const questionMap = new Map();
   base.forEach((q) => questionMap.set(q.id, { ...q }));
-  custom.forEach((q) => questionMap.set(q.id, { ...q }));
+  custom.filter((q) => validateQuestion(q).valid).forEach((q) => {
+    if (!questionMap.has(q.id)) questionMap.set(q.id, { ...q });
+  });
 
   // Hydrate with local runtime stats
   const stats = loadJSON(STATS_KEY, {});
@@ -110,6 +114,7 @@ export function recordQuestionAttempt(questionId, isCorrect, latencyMs = 0) {
 export function importQuestionPack(payload) {
   let questions = payload;
   if (typeof payload === 'string') {
+    if (new TextEncoder().encode(payload).length > MAX_IMPORT_BYTES) return { success: false, error: 'Question pack exceeds 5 MiB.' };
     try {
       questions = JSON.parse(payload);
     } catch {
@@ -127,12 +132,17 @@ export function importQuestionPack(payload) {
 
   const validQuestions = [];
   const errors = [];
+  if (questions.length > 5000) return { success: false, error: 'Question pack exceeds 5,000 items.' };
+  const builtInIds = new Set([...LOGIC_PUZZLES, ...MATH_PROBLEMS, ...COMPREHENSION_PASSAGES].map((q) => q.id));
+  const packIds = new Set();
 
   questions.forEach((q, index) => {
-    if (!q.id || !q.domain || !q.question || !q.correctAnswer) {
-      errors.push(`Item at index ${index} missing required fields (id, domain, question, or correctAnswer)`);
+    const validation = validateQuestion(q);
+    if (!validation.valid || builtInIds.has(q.id) || packIds.has(q.id)) {
+      errors.push(`Item ${index + 1}: ${validation.error || 'Duplicate or reserved built-in ID.'}`);
       return;
     }
+    packIds.add(q.id);
 
     validQuestions.push({
       ...q,
@@ -141,21 +151,28 @@ export function importQuestionPack(payload) {
         dateAdded: q.metadata?.dateAdded || new Date().toISOString().slice(0, 10),
         timesServed: 0,
         userAccuracy: null,
-        ...q.metadata
+        ...(isRecord(q.metadata) ? q.metadata : {})
       }
     });
   });
 
-  if (validQuestions.length === 0) {
-    return { success: false, error: 'No valid questions found', errors };
+  if (errors.length || validQuestions.length === 0) {
+    return { success: false, error: 'Question pack was not imported. Fix the invalid items and retry.', errors };
+  }
+
+  if (new TextEncoder().encode(JSON.stringify(validQuestions)).length > MAX_IMPORT_BYTES) {
+    return { success: false, error: 'Question pack exceeds 5 MiB.' };
   }
 
   const currentCustom = loadJSON(CUSTOM_QUESTIONS_KEY, []);
   const customMap = new Map();
-  currentCustom.forEach((q) => customMap.set(q.id, q));
+  (Array.isArray(currentCustom) ? currentCustom : []).filter((q) => validateQuestion(q).valid)
+    .forEach((q) => customMap.set(q.id, q));
   validQuestions.forEach((q) => customMap.set(q.id, q));
 
-  saveJSON(CUSTOM_QUESTIONS_KEY, Array.from(customMap.values()));
+  if (!saveJSON(CUSTOM_QUESTIONS_KEY, Array.from(customMap.values()))) {
+    return { success: false, error: 'Could not save question pack. Check available browser storage.' };
+  }
 
   return {
     success: true,

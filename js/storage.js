@@ -16,14 +16,11 @@ export const KEYS = {
 };
 
 const memoryStore = new Map();
+const RESTORE_JOURNAL = PREFIX + '__restore_journal';
 
-function getStorage() {
+function rawStorage() {
   try {
     if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
-      // Test read/write
-      const testKey = '__sharp_storage_test__';
-      localStorage.setItem(testKey, '1');
-      localStorage.removeItem(testKey);
       return localStorage;
     }
   } catch {}
@@ -35,6 +32,66 @@ function getStorage() {
     get length() { return memoryStore.size; },
     key: (i) => Array.from(memoryStore.keys())[i] || null
   };
+}
+
+function rawSnapshot(store) {
+  const snapshot = {};
+  for (let i = 0; i < store.length; i++) {
+    const key = store.key(i);
+    if (key?.startsWith(PREFIX) && key !== RESTORE_JOURNAL) snapshot[key] = store.getItem(key);
+  }
+  return snapshot;
+}
+
+function recoverRestore(store) {
+  const journal = store.getItem(RESTORE_JOURNAL);
+  if (journal === null) return;
+  const previous = JSON.parse(journal);
+  if (!previous || Array.isArray(previous) || typeof previous !== 'object' ||
+      Object.entries(previous).some(([key, value]) => !key.startsWith(PREFIX) || key === RESTORE_JOURNAL || typeof value !== 'string')) {
+    throw new Error('Invalid restore recovery record.');
+  }
+  for (const key of Object.keys(rawSnapshot(store))) {
+    if (!Object.hasOwn(previous, key)) store.removeItem(key);
+  }
+  for (const [key, value] of Object.entries(previous)) store.setItem(key, value);
+  store.removeItem(RESTORE_JOURNAL);
+}
+
+function getStorage() {
+  const store = rawStorage();
+  recoverRestore(store);
+  return store;
+}
+
+// localStorage has no transactions. Keep a durable rollback journal until every write succeeds.
+export function replaceSharpData(data) {
+  let store;
+  let journalWritten = false;
+  try {
+    const serialized = Object.entries(data).map(([key, value]) => {
+      if (key === '__restore_journal' || ['__proto__', 'constructor', 'prototype'].includes(key)) throw new Error('Invalid storage key.');
+      const json = JSON.stringify(value);
+      if (json === undefined) throw new Error('Invalid storage value.');
+      return [PREFIX + key, json];
+    });
+    store = getStorage();
+    const previous = rawSnapshot(store);
+    store.setItem(RESTORE_JOURNAL, JSON.stringify(previous));
+    journalWritten = true;
+    for (const [key, value] of serialized) store.setItem(key, value);
+    const incoming = new Set(serialized.map(([key]) => key));
+    for (const key of Object.keys(previous)) if (!incoming.has(key)) store.removeItem(key);
+    store.removeItem(RESTORE_JOURNAL);
+    return { success: true };
+  } catch {
+    if (journalWritten) {
+      try { recoverRestore(store); } catch {
+        return { success: false, error: 'Restore failed. Recovery is pending until browser storage is writable again.' };
+      }
+    }
+    return { success: false, error: 'Could not restore backup. Existing progress was preserved; free browser storage and retry.' };
+  }
 }
 
 export function loadJSON(key, fallback = null) {

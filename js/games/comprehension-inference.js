@@ -1,3 +1,4 @@
+import { escapeHTML } from '../content-validation.js';
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
 import { burstConfetti } from '../celebration.js';
@@ -48,22 +49,22 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
       <div class="comprehension-card">
         <div class="comp-card-meta">
           <span>Passage ${qIndex + 1} of ${selected.length}</span>
-          <span class="difficulty-tag">${item.title}</span>
+          <span class="difficulty-tag">${escapeHTML(item.title)}</span>
         </div>
 
         <div class="passage-box">
-          <p class="passage-text">${item.passage}</p>
+          <p class="passage-text">${escapeHTML(item.passage)}</p>
         </div>
 
         <div class="comp-question-prompt">
-          ${item.question}
+          ${escapeHTML(item.question)}
         </div>
 
         <div class="comp-options-grid" id="compOpts">
           ${shuffledOptions.map((opt, i) => `
-            <button class="btn comp-option-btn" type="button" data-val="${opt}">
+            <button class="btn comp-option-btn" type="button" data-val="${escapeHTML(opt)}">
               <span class="opt-key">${i + 1}</span>
-              <span class="opt-text">${opt}</span>
+              <span class="opt-text">${escapeHTML(opt)}</span>
             </button>
           `).join('')}
         </div>
@@ -100,7 +101,7 @@ function runComprehensionSession(stage, config, currentRating, onComplete) {
       }
 
       btns.forEach((b) => (b.disabled = true));
-      explEl.innerHTML = `<strong>${isCorrect ? '✓ Valid Inference' : '✗ Incorrect'}:</strong> ${item.explanation}`;
+      explEl.innerHTML = `<strong>${isCorrect ? '✓ Valid Inference' : '✗ Incorrect'}:</strong> ${escapeHTML(item.explanation)}`;
       explEl.removeAttribute('hidden');
 
       setTimeout(() => {

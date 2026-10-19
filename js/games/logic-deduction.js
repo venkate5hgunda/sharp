@@ -1,3 +1,4 @@
+import { escapeHTML } from '../content-validation.js';
 // Deductive Syllogisms & Logic Reasoning Engine
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
@@ -49,25 +50,25 @@ function runLogicSession(stage, config, currentRating, onComplete) {
       <div class="logic-puzzle-card">
         <div class="logic-card-meta">
           <span>Deduction ${qIndex + 1} of ${selectedPuzzles.length}</span>
-          <span class="difficulty-tag">Tier ${puzzle.tier}</span>
+          <span class="difficulty-tag">Tier ${puzzle.difficultyTier}</span>
         </div>
 
         <div class="premises-box">
           <div class="premises-label">GIVEN PREMISES:</div>
           <ul class="premises-list">
-            ${puzzle.premises.map((p) => `<li>${p}</li>`).join('')}
+            ${puzzle.premises.map((p) => `<li>${escapeHTML(p)}</li>`).join('')}
           </ul>
         </div>
 
         <div class="logic-question-prompt">
-          ${puzzle.question}
+          ${escapeHTML(puzzle.question)}
         </div>
 
         <div class="logic-options-grid" id="logicOpts">
           ${shuffledOptions.map((opt, i) => `
-            <button class="btn logic-option-btn" type="button" data-val="${opt}">
+            <button class="btn logic-option-btn" type="button" data-val="${escapeHTML(opt)}">
               <span class="opt-key">${i + 1}</span>
-              <span class="opt-text">${opt}</span>
+              <span class="opt-text">${escapeHTML(opt)}</span>
             </button>
           `).join('')}
         </div>
@@ -104,7 +105,7 @@ function runLogicSession(stage, config, currentRating, onComplete) {
       }
 
       btns.forEach((b) => (b.disabled = true));
-      explanationEl.innerHTML = `<strong>${isCorrect ? '✓ Correct Deduction' : '✗ Incorrect'}:</strong> ${puzzle.explanation}`;
+      explanationEl.innerHTML = `<strong>${isCorrect ? '✓ Correct Deduction' : '✗ Incorrect'}:</strong> ${escapeHTML(puzzle.explanation)}`;
       explanationEl.removeAttribute('hidden');
 
       setTimeout(() => {

@@ -1,3 +1,4 @@
+import { escapeHTML } from '../content-validation.js';
 // Mental Math & Story Comprehension Challenge
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
@@ -75,14 +76,14 @@ function runMathSession(stage, mode, config, currentRating, onComplete) {
         </div>
 
         <div class="math-expression-display ${mode === 'story' ? 'is-story' : ''}">
-          ${problem.prompt}
+          ${escapeHTML(problem.prompt).replace(/&lt;(\/?)strong&gt;/g, '<$1strong>')}
         </div>
 
         <div class="math-options-grid" id="optionsGrid">
           ${problem.options.map((opt, i) => `
-            <button class="btn math-option-btn" type="button" data-val="${opt}" data-shortcut="${i + 1}">
+            <button class="btn math-option-btn" type="button" data-val="${escapeHTML(opt)}" data-shortcut="${i + 1}">
               <span class="opt-key">${i + 1}</span>
-              <span class="opt-val">${opt}</span>
+              <span class="opt-val">${escapeHTML(opt)}</span>
             </button>
           `).join('')}
         </div>

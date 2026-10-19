@@ -1,3 +1,4 @@
+import { escapeHTML } from '../content-validation.js';
 // Time-Capsule Delayed Memory — Morning Study & Evening Recall Protocol
 import { loadJSON, saveJSON, KEYS } from '../storage.js';
 import { audio } from '../audio.js';
@@ -93,11 +94,11 @@ function renderStudyView(container, config, currentRating, onComplete) {
       <div class="study-items-grid">
         ${targetWords.map((item, idx) => `
           <div class="study-item-card" style="animation-delay: ${idx * 60}ms">
-            <span class="item-icon">${item.icon}</span>
+            <span class="item-icon">${escapeHTML(item.icon)}</span>
             <div class="item-text">
-              <span class="item-category">${item.category}</span>
-              <strong class="item-word">${item.word}</strong>
-              <small class="item-cue">${item.cue}</small>
+              <span class="item-category">${escapeHTML(item.category)}</span>
+              <strong class="item-word">${escapeHTML(item.word)}</strong>
+              <small class="item-cue">${escapeHTML(item.cue)}</small>
             </div>
           </div>
         `).join('')}
@@ -211,9 +212,9 @@ function renderRecallTest(container, session, config, currentRating, onComplete)
 
       <div class="recognition-grid" id="recogGrid">
         ${recognitionPool.map((item) => `
-          <button class="recognition-chip" type="button" data-word="${item.word}" data-is-target="${targetWords.includes(item.word.toLowerCase())}">
-            <span class="chip-icon">${item.icon}</span>
-            <span class="chip-label">${item.word}</span>
+          <button class="recognition-chip" type="button" data-word="${escapeHTML(item.word)}" data-is-target="${targetWords.includes(item.word.toLowerCase())}">
+            <span class="chip-icon">${escapeHTML(item.icon)}</span>
+            <span class="chip-label">${escapeHTML(item.word)}</span>
           </button>
         `).join('')}
       </div>

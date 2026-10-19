@@ -104,9 +104,11 @@ All data is stored client-side in `localStorage` under the `sharp:` namespace:
   - `appName`: `"sharp"`
   - `schemaVersion`: `1`
   - `exportedAt`: ISO 8601 string
-  - `checksum`: 32-bit FNV-1a / polynomial hash for integrity validation
+  - `checksum`: legacy DJB2-style 32-bit checksum for accidental-corruption detection (not authentication)
   - `data`: Complete dictionary of all `sharp:*` records
-- Import engine verifies file type, schema version, checksum, and provides:
+- Imports are limited to 5 MiB and validate supported schema, record shapes, finite metrics, plain-text content, and any supplied checksum. Checksum-less legacy files show an explicit warning; mismatched checksums are rejected.
+- Restores write a rollback journal before changing progress. Failed writes roll back; interrupted restores recover on the next storage access. A full quota fails safely before replacement.
+- Import provides:
   - **Replace**: Complete restore of previous state.
   - **Merge**: Non-destructive union of session histories, preserving highest streaks and ratings.
 

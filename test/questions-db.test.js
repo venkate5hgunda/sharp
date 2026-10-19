@@ -71,6 +71,7 @@ test('importQuestionPack validates and ingests valid questions', () => {
       category: 'syllogisms',
       skill: 'test_skill',
       difficultyTier: 2,
+      premises: ['This is a test.'],
       question: 'Is this a valid test?',
       options: ['Yes', 'No'],
       correctAnswer: 'Yes',
@@ -85,4 +86,31 @@ test('importQuestionPack validates and ingests valid questions', () => {
   const retrieved = getQuestionById('custom_test_001');
   assert.ok(retrieved);
   assert.equal(retrieved.question, 'Is this a valid test?');
+});
+
+import { clearAllSharpData, loadJSON } from '../js/storage.js';
+const zeroQuestion = () => ({
+  id: 'custom_zero', domain: 'math', category: 'arithmetic', skill: 'subtraction', difficultyTier: 1,
+  question: 'What is 1 minus 1?', prompt: '1 − 1 = ?', options: [0, 1], correctAnswer: 0, explanation: 'One minus one is zero.'
+});
+
+test('numeric zero is a valid correct answer', () => {
+  clearAllSharpData();
+  assert.equal(importQuestionPack([zeroQuestion()]).success, true);
+  assert.equal(getQuestionById('custom_zero').correctAnswer, 0);
+});
+
+test('invalid packs are rejected atomically without changing stored questions', () => {
+  clearAllSharpData();
+  importQuestionPack([zeroQuestion()]);
+  const before = loadJSON('custom_questions');
+  for (const patch of [ { difficultyTier: 0 }, { difficultyTier: 2.5 }, { difficultyTier: 8 },
+    { options: [0, 0] }, { options: [1, 2] }, { correctAnswer: '0' },
+    { question: '<img src=x onerror=alert(1)>' }, { prompt: '' }, { id: 123 }, { id: '__proto__' }, { id: 'constructor' },
+    { id: getAllQuestions().find((q) => q.id !== 'custom_zero').id } ]) {
+    assert.equal(importQuestionPack([{ ...zeroQuestion(), id: 'valid_new' }, { ...zeroQuestion(), ...patch }]).success, false);
+    assert.deepEqual(loadJSON('custom_questions'), before);
+  }
+  assert.equal(importQuestionPack([zeroQuestion(), zeroQuestion()]).success, false);
+  assert.equal(importQuestionPack('x'.repeat(5 * 1024 * 1024 + 1)).success, false);
 });

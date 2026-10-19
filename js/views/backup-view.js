@@ -1,10 +1,11 @@
 // Backup & Data Sovereignty View — Single-File JSON Export, Import, Checksum Validation & Schema Migrations
-import { downloadBackupFile, downloadQuestionDatasetFile, validateAndMigrateBackup, applyBackup, markBackupCompleted } from '../backup.js';
+import { downloadBackupFile, downloadQuestionDatasetFile, validateAndMigrateBackup, applyBackup } from '../backup.js';
 import { getStorageStats, loadJSON, KEYS, CURRENT_SCHEMA_VERSION } from '../storage.js';
-import { getDatasetStats, importQuestionPack } from '../../data/questions-db.js';
+import { getDatasetStats } from '../../data/questions-db.js';
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
 import { burstConfetti } from '../celebration.js';
+import { MAX_IMPORT_BYTES, escapeHTML } from '../content-validation.js';
 
 export function render(container) {
   const meta = loadJSON(KEYS.BACKUP_META, {});
@@ -76,7 +77,7 @@ export function render(container) {
         <span class="card-icon">📂</span>
         <div>
           <h3>Import &amp; Restore Backup</h3>
-          <p>Restore or merge a previously exported Sharp JSON file. Schema migrations and integrity checks are applied automatically.</p>
+          <p>Restore or merge a previously exported Sharp JSON file. Supported schema and data integrity are checked before restoring. Legacy files without checksums show a warning.</p>
         </div>
       </div>
 
@@ -139,6 +140,11 @@ export function render(container) {
   });
 
   function processFile(file) {
+    if (file.size > MAX_IMPORT_BYTES) {
+      previewBox.textContent = 'Backup exceeds 5 MiB. Choose a smaller file.';
+      previewBox.hidden = false;
+      return;
+    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const res = validateAndMigrateBackup(event.target.result);
@@ -156,7 +162,8 @@ export function render(container) {
       audio.tap();
       previewBox.innerHTML = `
         <div class="preview-card">
-          <h4>✓ Verified Sharp Backup</h4>
+          <h4>${res.integrityVerified ? '✓ Verified Sharp Backup' : 'Legacy Sharp Backup'}</h4>
+          ${res.warnings.map((warning) => `<p>${escapeHTML(warning)}</p>`).join('')}
           <div class="preview-stats">
             <div><span>Exported:</span> <strong>${new Date(res.exportedAt).toLocaleDateString()}</strong></div>
             <div><span>Schema:</span> <strong>v${res.schemaVersion}</strong></div>
@@ -177,7 +184,8 @@ export function render(container) {
       previewBox.removeAttribute('hidden');
 
       previewBox.querySelector('#mergeBackupBtn').addEventListener('click', () => {
-        applyBackup(res.data, 'merge');
+        const result = applyBackup(res.data, 'merge');
+        if (!result.success) { alert(result.error); return; }
         audio.chime();
         burstConfetti();
         alert('Backup successfully merged with your current profile!');
@@ -186,13 +194,18 @@ export function render(container) {
 
       previewBox.querySelector('#replaceBackupBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to replace all current data with this backup?')) {
-          applyBackup(res.data, 'replace');
+          const result = applyBackup(res.data, 'replace');
+          if (!result.success) { alert(result.error); return; }
           audio.chime();
           burstConfetti();
           alert('Backup restored successfully!');
           render(container);
         }
       });
+    };
+    reader.onerror = () => {
+      previewBox.textContent = 'Could not read this backup file. Try selecting it again.';
+      previewBox.hidden = false;
     };
     reader.readAsText(file);
   }
