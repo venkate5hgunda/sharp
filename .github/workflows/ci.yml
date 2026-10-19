@@ -15,6 +15,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm ci
       - name: Check JS syntax
         run: |
           for f in $(find . -name '*.js' -not -path './node_modules/*' -not -path './.git/*'); do
@@ -25,3 +26,12 @@ jobs:
         run: npm test
       - name: Verify offline manifest
         run: npm run check:offline
+      - name: Install test browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser and accessibility tests
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-failures
+          path: test-results/

@@ -17,7 +17,7 @@
 
   <!-- Header Bar -->
   <header class="app-header">
-    <a href="#/workout" class="brand-anchor" aria-label="Sharp Home">
+    <a href="#/today" class="brand-anchor" aria-label="Sharp Home">
       <img src="assets/logo.svg" class="brand-logo" alt="" width="36" height="36">
       <img src="assets/wordmark.svg" class="brand-wordmark" alt="Sharp">
     </a>
@@ -34,22 +34,12 @@
   </header>
 
   <!-- Navigation Tabs -->
-  <nav class="app-nav" role="tablist" aria-label="Main Navigation">
-    <a href="#/workout" class="nav-link is-active" data-route="workout" role="tab" aria-selected="true">
-      <span>⚡</span> Daily Workout
-    </a>
-    <a href="#/catalog" class="nav-link" data-route="catalog" role="tab" aria-selected="false">
-      <span>🎮</span> Exercises
-    </a>
-    <a href="#/analytics" class="nav-link" data-route="analytics" role="tab" aria-selected="false">
-      <span>📊</span> Analytics
-    </a>
-    <a href="#/backup" class="nav-link" data-route="backup" role="tab" aria-selected="false">
-      <span>💾</span> Backup
-    </a>
-    <a href="#/settings" class="nav-link" data-route="settings" role="tab" aria-selected="false">
-      <span>⚙️</span> Settings
-    </a>
+  <nav class="app-nav" aria-label="Main navigation">
+    <a href="#/today" class="nav-link is-active" data-route="today" aria-current="page">Today</a>
+    <a href="#/exercises" class="nav-link" data-route="exercises">Exercises</a>
+    <a href="#/progress" class="nav-link" data-route="progress">Progress</a>
+    <a href="#/backup" class="nav-link" data-route="backup">Backup</a>
+    <a href="#/settings" class="nav-link" data-route="settings">Settings</a>
   </nav>
 
   <!-- In-App Notification Banner Container -->

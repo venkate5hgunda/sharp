@@ -1,0 +1,20 @@
+import { progressMetrics } from '../session/metrics.js';
+import { escapeHTML as h } from '../content-validation.js';
+export function renderProgress(container, repo) {
+  const state = repo.snapshot(), m = progressMetrics(state), rounds = Object.values(state.rounds).sort((a, b) => b.timestamp - a.timestamp);
+  const retention = state.memoryHistory || [];
+  container.innerHTML = `<div class="view-header"><div><h1 class="view-title">Progress</h1><p class="view-desc">Your practice evidence stays on this device. Metric version: ${m.version}.</p></div></div>
+    <div class="workout-card"><h2>${m.eligible ? `You answered ${m.correct} of ${m.eligible} scored questions correctly` : 'Your next session starts the story'}</h2>
+      <p>${m.eligible ? `${Math.round(m.accuracy * 100)}% accuracy across scored binary responses. Practice and interrupted trials are excluded.` : 'Complete an exercise to see your first results. Untrained domains have no accuracy estimate.'}</p>
+      <p>${m.workoutCount} completed workouts from ${m.startedCount} starts · ${m.currentStreak} day local streak · longest ${m.longestStreak}.</p>
+      ${m.partialScore !== null ? `<p>Pattern fidelity: ${Math.round(m.partialScore * 100)}% (F1 partial credit; separate from binary accuracy).</p>` : ''}
+      <p>${h(m.trend)}</p></div>
+    <div class="settings-card"><h2>Domain ratings</h2><p>Adaptive practice heuristics, starting at 1000. These are not intelligence or medical assessments.</p>
+      <table><caption>Current rating and scored evidence</caption><thead><tr><th scope="col">Domain</th><th scope="col">Rating</th><th scope="col">Responses</th></tr></thead><tbody>${Object.entries(m.ratings).map(([domain, rating]) => `<tr><th scope="row">${h(domain)}</th><td>${rating}</td><td>${Object.values(state.attempts).filter((a) => a.domain === domain && !a.practice && !a.interrupted).length || 'No scored evidence yet'}</td></tr>`).join('')}</tbody></table></div>
+    <div class="settings-card"><h2>Daily overall rating</h2><p>Mean of all five domain ratings, including unchanged domains. Missing days are not fabricated as zeroes.</p>
+      ${m.dailyScores.length ? `<table><thead><tr><th scope="col">Local date</th><th scope="col">End-of-day overall rating</th></tr></thead><tbody>${m.dailyScores.map((d) => `<tr><th scope="row">${d.date}</th><td>${d.score}</td></tr>`).join('')}</tbody></table>` : '<p>No scored daily snapshots yet.</p>'}</div>
+    <div class="settings-card"><h2>Response times</h2><p>${m.speedCount ? `Median ${(m.medianMs / 1000).toFixed(1)}s; p90 ${(m.p90Ms / 1000).toFixed(1)}s from ${m.speedCount} correct scored responses. These mixed-task totals describe activity; compare the same skill and tier for trends.` : 'No correct scored response times yet.'}</p><p>Reading time is separate. Hidden time and paused time do not count toward active response time.</p></div>
+    <div class="settings-card"><h2>Retention practice</h2>${retention.length ? `<ul>${retention.slice(-20).reverse().map((r) => `<li>${h(r.mode)} · ${(r.actualDelayMs / 3600000).toFixed(2)} hours actual delay · ${h(r.bucket || 'practice')} ${r.practice ? '· unrated' : ''}</li>`).join('')}</ul>` : '<p>No retrieval completed yet.</p>'}</div>
+    ${m.legacyRoundCount || m.legacyStreak ? `<div class="settings-card"><h2>Preserved legacy progress</h2><p>${m.legacyRoundCount} historical round summaries. Their original averages are retained; attempt-level evidence is unavailable.</p><p>Legacy streak: ${m.legacyStreak?.current || 0} days; longest ${m.legacyStreak?.longest || 0}. Calendar policy: ${h(m.legacyStreak?.calendarPolicy || 'UTC legacy')}. Original dates remain in your backup.</p></div>` : ''}
+    <div class="settings-card"><h2>Recent sessions</h2>${rounds.length ? `<ul>${rounds.slice(0, 20).map((r) => `<li>${h(r.game)} · ${r.date} · ${Math.round(r.score / r.count * 100)}% · ${r.practice ? 'practice' : `${r.count} scored responses`}</li>`).join('')}</ul>` : '<p>No completed rounds yet.</p>'}</div>`;
+}
