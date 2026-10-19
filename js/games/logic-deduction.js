@@ -11,6 +11,9 @@ import { getQuestionsByDomain, recordQuestionAttempt } from '../../data/question
 export function render(container, onComplete) {
   const scope = createSessionScope();
   onComplete = scope.once(onComplete || (() => {}));
+  scope.listen(container, 'keydown', (event) => {
+    if (event.repeat && ['Enter', ' '].includes(event.key)) event.preventDefault();
+  });
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.LOGIC] || 1000;
   const config = getGameConfig('logic-deduction', currentRating);
@@ -64,11 +67,11 @@ function runLogicSession(stage, config, currentRating, onComplete, scope) {
           </ul>
         </div>
 
-        <div class="logic-question-prompt">
+        <div id="logicQuestionPrompt" class="logic-question-prompt">
           ${escapeHTML(puzzle.question)}
         </div>
 
-        <div class="logic-options-grid" id="logicOpts">
+        <div class="logic-options-grid" id="logicOpts" role="group" aria-labelledby="logicQuestionPrompt">
           ${shuffledOptions.map((opt, i) => `
             <button class="btn logic-option-btn" type="button" data-val="${escapeHTML(opt)}">
               <span class="opt-key">${i + 1}</span>
@@ -77,7 +80,12 @@ function runLogicSession(stage, config, currentRating, onComplete, scope) {
           `).join('')}
         </div>
 
-        <div id="logicExplanation" class="logic-explanation" hidden></div>
+        <div id="logicExplanation" class="logic-explanation" role="status" hidden></div>
+        <div class="question-next-row" hidden>
+          <button id="logicNextBtn" class="btn btn-primary" type="button" aria-describedby="logicExplanation">
+            ${qIndex + 1 === selectedPuzzles.length ? 'View results' : 'Next question'}
+          </button>
+        </div>
       </div>
     `;
 
@@ -110,13 +118,17 @@ function runLogicSession(stage, config, currentRating, onComplete, scope) {
       }
 
       btns.forEach((b) => (b.disabled = true));
-      explanationEl.innerHTML = `<strong>${isCorrect ? '✓ Correct Deduction' : '✗ Incorrect'}:</strong> ${escapeHTML(puzzle.explanation)}`;
+      explanationEl.innerHTML = `<strong>${isCorrect ? '✓ Correct Deduction' : '✗ Incorrect'}:</strong> ${isCorrect ? '' : `Correct answer: ${escapeHTML(puzzle.correctAnswer)}<br>`}${escapeHTML(puzzle.explanation)}`;
       explanationEl.removeAttribute('hidden');
 
-      scope.timeout(() => {
+      const nextButton = stage.querySelector('#logicNextBtn');
+      nextButton.parentElement.hidden = false;
+      scope.listen(nextButton, 'click', scope.once(() => {
+        nextButton.disabled = true;
         qIndex++;
         showPuzzle();
-      }, 2500);
+      }));
+      nextButton.focus();
     }
 
     btns.forEach((btn) => {
@@ -124,6 +136,7 @@ function runLogicSession(stage, config, currentRating, onComplete, scope) {
     });
 
     const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
+    if (qIndex > 0) btns[0]?.focus();
   }
 
   const finishGame = scope.once(() => {
@@ -186,6 +199,9 @@ function runLogicSession(stage, config, currentRating, onComplete, scope) {
       audio.tap();
       if (onComplete) onComplete();
     });
+    const heading = stage.querySelector('.result-summary-card h3');
+    heading.tabIndex = -1;
+    heading.focus();
   });
 
   showPuzzle();

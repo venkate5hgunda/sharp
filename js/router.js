@@ -83,6 +83,11 @@ export class SharpRouter {
     } else {
       this.navigateTo('workout');
     }
+    const heading = this.container.querySelector('h1, h2');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
   }
 
   mountGame(gameId) {

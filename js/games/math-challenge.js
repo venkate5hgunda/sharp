@@ -24,6 +24,9 @@ export function render(container, onComplete) {
 function renderMathGame(container, mode, onComplete) {
   const scope = createSessionScope();
   onComplete = scope.once(onComplete || (() => {}));
+  scope.listen(container, 'keydown', (event) => {
+    if (event.repeat && ['Enter', ' '].includes(event.key)) event.preventDefault();
+  });
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.MATH] || 1000;
   const config = getGameConfig(mode === 'story' ? 'story-math' : 'math-arithmetic', currentRating);
@@ -79,17 +82,23 @@ function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
           <span class="difficulty-tag">Tier ${config.tier}</span>
         </div>
 
-        <div class="math-expression-display ${mode === 'story' ? 'is-story' : ''}">
+        <div id="mathQuestionPrompt" class="math-expression-display ${mode === 'story' ? 'is-story' : ''}">
           ${escapeHTML(problem.prompt).replace(/&lt;(\/?)strong&gt;/g, '<$1strong>')}
         </div>
 
-        <div class="math-options-grid" id="optionsGrid">
+        <div class="math-options-grid" id="optionsGrid" role="group" aria-labelledby="mathQuestionPrompt">
           ${problem.options.map((opt, i) => `
             <button class="btn math-option-btn" type="button" data-val="${escapeHTML(opt)}" data-shortcut="${i + 1}">
               <span class="opt-key">${i + 1}</span>
               <span class="opt-val">${escapeHTML(opt)}</span>
             </button>
           `).join('')}
+        </div>
+        <div id="mathExplanation" class="question-feedback" role="status" hidden></div>
+        <div class="question-next-row" hidden>
+          <button id="mathNextBtn" class="btn btn-primary" type="button" aria-describedby="mathExplanation">
+            ${questionIndex + 1 === totalQuestions ? 'View results' : 'Next question'}
+          </button>
         </div>
       </div>
     `;
@@ -128,10 +137,18 @@ function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
 
       btns.forEach((b) => (b.disabled = true));
 
-      scope.timeout(() => {
+      const explanationEl = stage.querySelector('#mathExplanation');
+      explanationEl.textContent = `${isCorrect ? '✓ Correct.' : '✗ Incorrect.'} ${problem.explanation || `The correct answer is ${problem.correctAnswer}.`}`;
+      explanationEl.hidden = false;
+
+      const nextButton = stage.querySelector('#mathNextBtn');
+      nextButton.parentElement.hidden = false;
+      scope.listen(nextButton, 'click', scope.once(() => {
+        nextButton.disabled = true;
         questionIndex++;
         showQuestion();
-      }, 1000);
+      }));
+      nextButton.focus();
     }
 
     btns.forEach((btn) => {
@@ -141,6 +158,7 @@ function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
     });
 
     const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
+    if (questionIndex > 0) btns[0]?.focus();
   }
 
   const finishGame = scope.once(() => {
@@ -204,6 +222,9 @@ function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
       audio.tap();
       if (onComplete) onComplete();
     });
+    const heading = stage.querySelector('.result-summary-card h3');
+    heading.tabIndex = -1;
+    heading.focus();
   });
 
   showQuestion();

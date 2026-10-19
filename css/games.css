@@ -435,13 +435,18 @@
 .math-option-btn.is-correct, .logic-option-btn.is-correct, .comp-option-btn.is-correct {
   background: rgba(16, 185, 129, 0.15);
   border-color: var(--accent-emerald);
-  color: var(--accent-emerald);
+  color: var(--text);
 }
 
 .math-option-btn.is-wrong, .logic-option-btn.is-wrong, .comp-option-btn.is-wrong {
   background: rgba(244, 63, 94, 0.15);
   border-color: var(--accent-rose);
-  color: var(--accent-rose);
+  color: var(--text);
+}
+
+.math-option-btn:disabled, .logic-option-btn:disabled, .comp-option-btn:disabled {
+  opacity: 1;
+  cursor: default;
 }
 
 /* Logic Premises */
@@ -474,7 +479,7 @@
   margin-bottom: 1.25rem;
 }
 
-.logic-explanation, .comp-explanation {
+.logic-explanation, .comp-explanation, .question-feedback {
   padding: 1rem;
   margin-top: 1.25rem;
   background: var(--surface-strong);
@@ -629,3 +634,6 @@
   .math-option-btn, .logic-option-btn, .comp-option-btn { transition: none !important; }
   .recognition-chip { transition: none !important; }
 }
+
+/* Feedback remains available until the player chooses to continue. */
+.question-next-row { margin-top: 1.25rem; text-align: right; }

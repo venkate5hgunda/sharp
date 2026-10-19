@@ -91,7 +91,7 @@ test('route-away releases a mounted game and workout child before callbacks can 
   const target = {};
   const back = { addEventListener() {} };
   const wrapper = { querySelector: (selector) => selector === '#gameMountTarget' ? target : back };
-  const container = { innerHTML: '', appendChild() {} };
+  const container = { innerHTML: '', appendChild() {}, querySelector: () => null };
   const source = readFileSync(new URL('../js/router.js', import.meta.url), 'utf8')
     .replace(/^import .*;\n/gm, '').replace('export class SharpRouter', 'class SharpRouter');
   const view = { render() {} };

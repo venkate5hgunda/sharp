@@ -10,3 +10,4 @@ This is a proposed future-state plan. Current implementation references remain i
 
 - [Implementation progress](IMPLEMENTATION_PROGRESS.md): pushed stages and remaining work.
 - [Phase 0 verification](PHASE_0_VERIFICATION.md): delivered behavior, regression coverage, browser evidence and remaining gates.
+- [Feedback UX verification](PHASE_1_FEEDBACK_VERIFICATION.md): explicit continuation, keyboard focus and current Phase 1 scope.

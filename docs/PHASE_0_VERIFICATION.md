@@ -58,6 +58,6 @@ Stopping the server checks independence from the app origin. It is not a full de
 
 ## Remaining gates
 
-Phase 1 still needs explicit Next controls, focus/dialog improvements, persistent workout checkpoints, interruption/reload recovery, cross-tab commit ownership and broader timed-phase browser coverage. The localStorage rollback journal is a compatibility measure; transactional IndexedDB persistence remains Phase 2. Legacy rating/streak merge behavior remains until projections can be rebuilt from appropriate history.
+Further delivery is tracked in [implementation progress](IMPLEMENTATION_PROGRESS.md). Remaining Phase 1 gates include dialog improvements, persistent workout checkpoints, interruption/reload recovery, cross-tab commit ownership and broader timed-phase browser coverage. The localStorage rollback journal is a compatibility measure; transactional IndexedDB persistence remains Phase 2. Legacy rating/streak merge behavior remains until projections can be rebuilt from appropriate history.
 
 No claim is made yet about background scheduling, hidden-tab fairness, browser data eviction, crash-proof multi-tab transactions, or physical iPhone/iPad/Mac performance. These require the later implementation and qualification stages described in the plan.

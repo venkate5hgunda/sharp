@@ -10,6 +10,9 @@ import { getQuestionsByDomain, recordQuestionAttempt } from '../../data/question
 export function render(container, onComplete) {
   const scope = createSessionScope();
   onComplete = scope.once(onComplete || (() => {}));
+  scope.listen(container, 'keydown', (event) => {
+    if (event.repeat && ['Enter', ' '].includes(event.key)) event.preventDefault();
+  });
   const ratings = getDomainRatings();
   const currentRating = ratings[DOMAINS.COMPREHENSION] || 1000;
   const config = getGameConfig('comprehension-inference', currentRating);
@@ -60,11 +63,11 @@ function runComprehensionSession(stage, config, currentRating, onComplete, scope
           <p class="passage-text">${escapeHTML(item.passage)}</p>
         </div>
 
-        <div class="comp-question-prompt">
+        <div id="compQuestionPrompt" class="comp-question-prompt">
           ${escapeHTML(item.question)}
         </div>
 
-        <div class="comp-options-grid" id="compOpts">
+        <div class="comp-options-grid" id="compOpts" role="group" aria-labelledby="compQuestionPrompt">
           ${shuffledOptions.map((opt, i) => `
             <button class="btn comp-option-btn" type="button" data-val="${escapeHTML(opt)}">
               <span class="opt-key">${i + 1}</span>
@@ -73,7 +76,12 @@ function runComprehensionSession(stage, config, currentRating, onComplete, scope
           `).join('')}
         </div>
 
-        <div id="compExplanation" class="comp-explanation" hidden></div>
+        <div id="compExplanation" class="comp-explanation" role="status" hidden></div>
+        <div class="question-next-row" hidden>
+          <button id="compNextBtn" class="btn btn-primary" type="button" aria-describedby="compExplanation">
+            ${qIndex + 1 === selected.length ? 'View results' : 'Next question'}
+          </button>
+        </div>
       </div>
     `;
 
@@ -106,13 +114,17 @@ function runComprehensionSession(stage, config, currentRating, onComplete, scope
       }
 
       btns.forEach((b) => (b.disabled = true));
-      explEl.innerHTML = `<strong>${isCorrect ? '✓ Valid Inference' : '✗ Incorrect'}:</strong> ${escapeHTML(item.explanation)}`;
+      explEl.innerHTML = `<strong>${isCorrect ? '✓ Valid Inference' : '✗ Incorrect'}:</strong> ${isCorrect ? '' : `Correct answer: ${escapeHTML(item.correctAnswer)}<br>`}${escapeHTML(item.explanation)}`;
       explEl.removeAttribute('hidden');
 
-      scope.timeout(() => {
+      const nextButton = stage.querySelector('#compNextBtn');
+      nextButton.parentElement.hidden = false;
+      scope.listen(nextButton, 'click', scope.once(() => {
+        nextButton.disabled = true;
         qIndex++;
         showQuestion();
-      }, 2500);
+      }));
+      nextButton.focus();
     }
 
     btns.forEach((btn) => {
@@ -120,6 +132,7 @@ function runComprehensionSession(stage, config, currentRating, onComplete, scope
     });
 
     const removeKeyListener = bindChoiceShortcuts(scope, btns, handleChoice);
+    if (qIndex > 0) btns[0]?.focus();
   }
 
   const finishGame = scope.once(() => {
@@ -182,6 +195,9 @@ function runComprehensionSession(stage, config, currentRating, onComplete, scope
       audio.tap();
       if (onComplete) onComplete();
     });
+    const heading = stage.querySelector('.result-summary-card h3');
+    heading.tabIndex = -1;
+    heading.focus();
   });
 
   showQuestion();
