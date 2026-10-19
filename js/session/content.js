@@ -4,6 +4,8 @@ import { COMPREHENSION_PASSAGES } from '../../data/domains/comprehension-passage
 import { MEMORY_CLUSTERS } from '../../data/domains/memory-clusters.js';
 import { generateArithmeticProblem, generateStoryProblem } from '../games/math-challenge.js';
 import { validateQuestion, isSafeData } from '../content-validation.js';
+import { FOUNDATION_QUESTIONS, FOUNDATION_MEMORY } from '../../data/packs/foundation-v2.js';
+import { verifyProof } from '../content/solvers.js';
 
 export function randomSource(seed) {
   let value = 2166136261;
@@ -16,7 +18,7 @@ export function shuffle(items, seed) {
   for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
   return result;
 }
-const plain = (text) => String(text || '').replace(/<\/?strong>/g, '');
+const plain = (text) => String(text || '').replace(/<\/?(?:strong|em)>/g, '');
 export function normalizeQuestion(q, origin = 'curated') {
   return { id: q.id, version: q.metadata?.version || 1, schemaVersion: 2, domain: q.domain,
     skill: q.skill, category: q.category, tier: q.difficultyTier, locale: 'en',
@@ -27,7 +29,12 @@ export function normalizeQuestion(q, origin = 'curated') {
     validation: origin === 'curated' ? 'authored' : 'imported-unrated',
     evidence: q.evidence || '', proof: q.proof || null };
 }
-export const BASE_CONTENT = [...MATH_PROBLEMS, ...LOGIC_PUZZLES, ...COMPREHENSION_PASSAGES].map((q) => normalizeQuestion(q));
+export const BASE_CONTENT = [...MATH_PROBLEMS, ...LOGIC_PUZZLES, ...COMPREHENSION_PASSAGES, ...FOUNDATION_QUESTIONS].map((q) => {
+  const item = normalizeQuestion(q);
+  if (item.proof) { if (!verifyProof(item)) throw new Error(`Invalid curriculum proof: ${item.id}`); item.validation = 'solver-verified'; }
+  return item;
+});
+export const MEMORY_CONTENT = [...MEMORY_CLUSTERS, ...FOUNDATION_MEMORY];
 export function validateItem(q) {
   if (!isSafeData(q) || q.schemaVersion !== 2 || typeof q.id !== 'string' || !/^[\w.-]{1,160}$/.test(q.id) ||
     ['__proto__', 'prototype', 'constructor'].includes(q.id) || !Number.isInteger(q.version) || q.version < 1 ||
@@ -70,6 +77,6 @@ export function arithmeticItems(config, seed, count = 8, story = false) {
 }
 export function chooseCluster(state, tier, seed) {
   const exposure = state.memoryExposure || {};
-  return shuffle(MEMORY_CLUSTERS, seed).sort((a, b) => (exposure[a.id] || 0) - (exposure[b.id] || 0) ||
+  return shuffle(MEMORY_CONTENT, seed).sort((a, b) => (exposure[a.id] || 0) - (exposure[b.id] || 0) ||
     Math.abs(a.difficultyTier - tier) - Math.abs(b.difficultyTier - tier))[0];
 }

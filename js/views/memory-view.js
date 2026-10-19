@@ -7,7 +7,7 @@ import { ratingToTier } from '../adaptive-engine.js';
 
 export function renderMemory(container, { repo, controller, navigate }) {
   const scope = createSessionScope(); let studying = null;
-  const run = async (action) => { try { await action(); if (scope.active) draw(); } catch (e) { if (scope.active) container.querySelector('#memoryError').textContent = e.message; } };
+  const run = async (action, redraw = true) => { try { await action(); if (scope.active && redraw) draw(); } catch (e) { if (scope.active) container.querySelector('#memoryError').textContent = e.message; } };
   function draw() {
     const state = repo.snapshot(), memory = state.memory;
     container.innerHTML = '<h1 class="view-title">Time-capsule recall</h1><p>Study a set now, then return later. Recognition and free recall are different kinds of practice.</p><p id="memoryError" role="alert"></p><div id="memoryStage" class="workout-card"></div>';
@@ -45,7 +45,7 @@ export function renderMemory(container, { repo, controller, navigate }) {
             s.memoryHistory ||= []; s.memoryHistory.push({ id: createId('recall'), memoryId: memory.id, mode: 'free-recall', practice: true,
               hits, responses: response.size, targets: memory.items.length, actualDelayMs: Date.now() - memory.createdAt, timestamp: Date.now() }); return s; });
           stage.innerHTML = `<h2>Free recall result</h2><p>${hits} of ${memory.items.length} items recalled exactly; ${Math.max(0, response.size - hits)} unmatched responses.</p><p>Saved as unrated practice.</p><a class="btn btn-primary" href="#/today">Return to Today</a>`;
-        }));
+        }, false));
       });
     } else {
       stage.innerHTML = `<h2>${memory ? 'Recall completed' : 'Build a memory practice habit'}</h2><p>Study a themed set, then return after six hours. A three-minute practice option is available.</p><button id="newStudy" class="btn btn-primary">Study a new set</button>`;

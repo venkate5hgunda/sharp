@@ -79,6 +79,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     stage.innerHTML = `<div class="math-question-card"><p>Question ${round.position + 1} of ${round.items.length} · Tier ${q.tier} · ${h(q.skill.replaceAll('_', ' '))}</p>
       ${q.passage ? `<h2>${h(q.title)}</h2><div class="comprehension-passage">${h(q.passage)}</div><button id="readingDone" class="btn btn-primary">Ready for the question</button>` : ''}
       ${q.premises?.length ? `<ul class="premises-list">${q.premises.map((p) => `<li>${h(p)}</li>`).join('')}</ul>` : ''}
+      ${q.prompt !== q.question ? `<p class="math-expression-display is-story">${h(q.prompt)}</p>` : ''}
       <div id="answerPhase" ${q.passage ? 'hidden' : ''}><h2 id="questionPrompt">${h(q.question || q.prompt)}</h2>
       <div class="logic-options-grid" role="group" aria-labelledby="questionPrompt">${q.options.map((o, i) => `<button type="button" class="btn logic-option-btn" data-val="${h(o.id)}"><span class="opt-key">${i + 1}</span><span>${h(o.text)}</span></button>`).join('')}</div></div></div>`;
     const btns = stage.querySelectorAll('[data-val]');

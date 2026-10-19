@@ -15,6 +15,8 @@ import { initTheme, setTheme } from './theme.js';
 import { audio } from './audio.js';
 import { haptics } from './haptics.js';
 import { createId } from './core/identity.js';
+import { BASE_CONTENT, importedItems } from './session/content.js';
+import { domainFor } from './session/controller.js';
 export async function boot() {
   const container = document.querySelector('#appContainer'), banner = document.querySelector('#inAppBannerHost');
   const showStatus = (message) => { banner.textContent = message; banner.setAttribute('role', 'status'); };
@@ -87,10 +89,15 @@ export async function boot() {
   }
   function exerciseIntro(game) {
     const scope = createSessionScope(), info = CATALOG.find((g) => g.id === game);
+    const selectable = !['math-arithmetic', 'pattern-flash', 'corsi-span'].includes(game);
+    const items = [...BASE_CONTENT, ...importedItems(repo.snapshot().content)].filter((q) => q.domain === domainFor(game));
+    const choices = (key) => [...new Set(items.map((q) => q[key]))].sort().map((value) => `<option value="${h(value)}">${h(value.replaceAll('_', ' '))}</option>`).join('');
     container.innerHTML = `<h1 class="view-title">${h(info.title)}</h1><div class="workout-card"><p>${h(info.summary)}</p><p>You’ll see instructions and an example before the first question. Responses are saved individually. This is cognitive practice, not a validated assessment.</p><label><input id="practiceExercise" type="checkbox"> Untimed practice (unrated)</label>
+      ${selectable ? `<p><label for="skillChoice">Skill</label><select id="skillChoice"><option value="">Balanced coverage</option>${choices('skill')}</select></p><p><label for="categoryChoice">Category</label><select id="categoryChoice"><option value="">All categories</option>${choices('category')}</select></p>` : ''}
       <p><button id="startExercise" class="btn btn-primary">Start exercise</button><a class="btn btn-outline" href="#/exercises">Back to Exercises</a></p></div>`;
     scope.listen(container.querySelector('#startExercise'), 'click', () => run(async () => { const practice = container.querySelector('#practiceExercise').checked; container.querySelector('#startExercise').disabled = true;
-      const id = await controller.start(game, { practice }); if (scope.active) navigate(`session/${id}`); })); return scope.dispose;
+      try { const id = await controller.start(game, { practice, skill: container.querySelector('#skillChoice')?.value || undefined, category: container.querySelector('#categoryChoice')?.value || undefined }); if (scope.active) navigate(`session/${id}`); }
+      finally { if (scope.active) container.querySelector('#startExercise').disabled = false; } })); return scope.dispose;
   }
   window.addEventListener('hashchange', () => run(route)); window.addEventListener('pagehide', () => cleanup());
   document.addEventListener('visibilitychange', () => { if (!document.hidden) run(checkReminder); });
