@@ -66,3 +66,9 @@ test('restore rejects invented scores and resolves divergent checkpoints as whol
   const checkpoint = repo.snapshot(); checkpoint.sessions[id].rounds[0].position = 0; assert.match(validateState(checkpoint), /checkpoint/);
   repo.close();
 });
+test('workout streaks qualify on the completion date and exclude practice starts', async () => {
+  const repo = await setup(); const state = repo.snapshot();
+  state.workouts = { overnight: { date: '2026-10-18', completedDate: '2026-10-19', completedAt: 1 }, practice: { date: '2026-10-19', completedAt: 1, practice: true } };
+  const result = progressMetrics(state, new Date('2026-10-19T12:00:00'));
+  assert.equal(result.currentStreak, 1); assert.equal(result.startedCount, 1); assert.equal(result.workoutCount, 1); repo.close();
+});

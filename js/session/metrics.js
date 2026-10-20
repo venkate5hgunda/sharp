@@ -42,7 +42,7 @@ export function progressMetrics(state, now = new Date()) {
   const partial = attempts.filter((a) => a.scoring !== 'binary-v1');
   const times = correct.map((a) => a.activeMs).sort((a, b) => a - b);
   const percentile = (p) => times.length ? times[Math.min(times.length - 1, Math.ceil(times.length * p) - 1)] : null;
-  const days = new Set(Object.values(state.workouts).filter((w) => w.completedAt && !w.practice).map((w) => w.date));
+  const days = new Set(Object.values(state.workouts).filter((w) => w.completedAt && !w.practice).map((w) => w.completedDate || w.date));
   // Keep UTC legacy evidence labelled and separate; never rewrite its date labels as local dates.
   const sorted = [...days].sort(); let longest = 0, run = 0, previous;
   for (const day of sorted) { const before = localDayKey(shiftLocalDay(new Date(`${day}T12:00:00`), -1)); run = previous === before ? run + 1 : 1; longest = Math.max(longest, run); previous = day; }
@@ -62,7 +62,7 @@ export function progressMetrics(state, now = new Date()) {
     medianMs: percentile(.5), p90Ms: percentile(.9), speedCount: times.length, currentStreak: current, longestStreak: longest,
     dailyScores: [...snapshots].map(([date, score]) => ({ date, score })),
     workoutCount: Object.values(state.workouts).filter((w) => w.completedAt && !w.practice).length,
-    startedCount: Object.keys(state.workouts).length,
+    startedCount: Object.values(state.workouts).filter((w) => !w.practice).length,
     legacyRoundCount: state.legacy.session_history?.length || 0,
     legacyStreak: state.legacy.streaks || null, slices,
     trend: slices.some((s) => s.enough) ? 'Comparable practice windows are shown below with their sample sizes.' : 'Insufficient data: complete 20 comparable attempts in a skill before comparing trends.' };

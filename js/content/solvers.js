@@ -23,6 +23,19 @@ export function solveProof(proof) {
     const candidates = Array.from({ length: proof.total + 1 }, (_, i) => i).filter((n) => n + proof.offset === proof.target);
     if (candidates.length !== 1) throw new Error('No unique finite answer.'); return candidates[0];
   }
+  if (proof.type === 'knights') {
+    const evaluate = (expression, values) => {
+      if (expression[0] === 'var' && ['x', 'y'].includes(expression[1])) return values[expression[1]];
+      if (expression[0] === 'not') return !evaluate(expression[1], values);
+      if (expression[0] === 'or') return evaluate(expression[1], values) || evaluate(expression[2], values);
+      if (expression[0] === 'iff') return evaluate(expression[1], values) === evaluate(expression[2], values);
+      throw new Error('Unsupported logical expression.');
+    };
+    const assignments = [false, true].flatMap((x) => [false, true].map((y) => ({ x, y })))
+      .filter((v) => proof.claims.every((claim, i) => !claim || evaluate(claim, v) === v[i === 0 ? 'x' : 'y']));
+    if (assignments.length !== 1) throw new Error('No unique consistent truth-teller assignment.');
+    const v = assignments[0]; return `${proof.labels[0]} is a ${v.x ? 'Knight' : 'Knave'}, and ${proof.labels[1]} is a ${v.y ? 'Knight' : 'Knave'}.`;
+  }
   throw new Error('Unsupported proof model.');
 }
 export function verifyProof(item) {

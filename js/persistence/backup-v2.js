@@ -64,7 +64,7 @@ export function validateState(state) {
     }
   }
   if (Object.values(state.attempts).some((a) => !state.sessions[a.sessionId].rounds.some((r) => r.attempts.includes(a.id))) || Object.values(state.rounds).some((r) => !state.sessions[r.sessionId].rounds.some((_, i) => `${r.sessionId}:${i}` === r.id))) return 'Orphaned attempt or round.';
-  for (const [id, w] of Object.entries(state.workouts)) if (!safeId(id) || !state.sessions[id] || !day(w.date) || !finite(w.timestamp) || w.completedAt !== null && !finite(w.completedAt)) return 'Invalid workout.';
+  for (const [id, w] of Object.entries(state.workouts)) if (!safeId(id) || !state.sessions[id] || !day(w.date) || w.completedDate !== undefined && !day(w.completedDate) || !finite(w.timestamp) || w.completedAt !== null && !finite(w.completedAt)) return 'Invalid workout.';
   if (state.memory && (!isRecord(state.memory) || !safeId(state.memory.id) || !['committed', 'completed'].includes(state.memory.status) || !Array.isArray(state.memory.items) || !state.memory.items.length || state.memory.items.length > 100 || state.memory.items.some((i) => typeof i.word !== 'string') || state.memory.foils !== undefined && (!Array.isArray(state.memory.foils) || state.memory.foils.length > 100 || state.memory.foils.some((i) => typeof i.word !== 'string')) || !finite(state.memory.readyAt) || !finite(state.memory.createdAt))) return 'Invalid memory snapshot.';
   for (const [k, cap] of [['diagnostics', 500], ['traces', 100], ['outbox', 200]]) if (!Array.isArray(state[k]) || state[k].length > cap) return `Invalid ${k} buffer.`;
   if (state.preferences.theme !== undefined && !['auto', 'dark', 'light'].includes(state.preferences.theme)) return 'Invalid theme.';

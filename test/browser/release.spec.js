@@ -60,9 +60,10 @@ test('delayed memory preserves committed study, gates readiness and completes fa
   await page.reload(); await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible(); await checkAccessibility(page);
   await page.clock.fastForward(181000); await page.getByRole('button', { name: 'Check readiness' }).click();
   await page.getByRole('button', { name: 'Begin recognition recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();
-  for (let i = 0; i < words.length * 2; i++) {
+  const count = Number((await page.locator('#sessionStage').innerText()).match(/Question 1 of (\d+)/)[1]);
+  for (let i = 0; i < count; i++) {
     await page.locator('[data-val]').first().click();
-    await page.getByRole('button', { name: i === words.length * 2 - 1 ? 'View results' : 'Next question', exact: true }).click();
+    await page.getByRole('button', { name: i === count - 1 ? 'View results' : 'Next question', exact: true }).click();
   }
   await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'View progress', exact: true }).click(); await expect(page.getByText(/recognition · .* hours actual delay · fast-track · unrated/)).toBeVisible();
@@ -84,4 +85,24 @@ test('installed shell reloads offline into an unvisited exercise', async ({ page
   await page.getByRole('button', { name: 'Start exercise', exact: true }).click(); await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
   await page.locator('[data-val]').first().click(); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   await context.setOffline(false);
+});
+test('held Enter cannot skip feedback or answer the following question', async ({ page }) => {
+  await page.goto('/#/games/math-arithmetic'); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
+  await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
+  await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
+  await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
+  await page.keyboard.up('Enter'); await page.keyboard.down('Enter'); await expect(page.getByText(/Question 2 of 8/)).toBeVisible();
+  await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toHaveCount(0); await page.keyboard.up('Enter');
+});
+test('cross-tab ownership requires takeover and rejects the stale owner', async ({ page, context }) => {
+  await page.goto('/#/games/logic-deduction'); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
+  await page.getByRole('button', { name: 'Begin exercise', exact: true }).click(); const url = page.url();
+  const other = await context.newPage(); await other.goto(url);
+  await expect(other.getByRole('heading', { name: 'Session paused' })).toBeVisible();
+  await other.getByRole('button', { name: 'Take over from another tab', exact: true }).click();
+  await other.locator('[data-val]').first().click(); await expect(other.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
+  await page.bringToFront(); await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Session paused' })).toBeVisible();
+  await page.getByRole('button', { name: 'Resume session', exact: true }).click(); await expect(page.locator('#sessionError')).toContainText('Another tab');
+  await other.close();
 });

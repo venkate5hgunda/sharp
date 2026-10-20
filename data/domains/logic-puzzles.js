@@ -137,7 +137,7 @@ export const LOGIC_PUZZLES = [
     premises: [
       'Five speakers (A, B, C, D, E) present one after another.',
       'B speaks immediately before C.',
-      'D speaks before A, but sometime after E.',
+      'D speaks before E, and E speaks before A.',
       'E is not the first speaker, and C is the final speaker.'
     ],
     question: 'Which speaker must present first?',
@@ -148,15 +148,16 @@ export const LOGIC_PUZZLES = [
       'A'
     ],
     correctAnswer: 'D',
-    explanation: 'C is last (slot 5). Since B speaks immediately before C, B is in slot 4. The remaining slots are 1, 2, 3 for A, D, E. Since D is before A, but after E, wait: D before A and after E gives E > D > A. But E cannot be first (slot 1), which means E is in slot 2, D is slot 3? Wait! If D is slot 1, let us re-verify: "D speaks before A, but sometime after E" means order is E then D then A. Wait, if E is after someone else: Let us re-read carefully: "E speaks after D"? If D speaks after E, E must precede D.',
+    explanation: 'C occupies slot 5 and B immediately precedes C in slot 4. The remaining three follow D before E before A, giving D, E, A, B, C. Therefore D must be first.',
+    proof: { type: 'ordering', names: ['A', 'B', 'C', 'D', 'E'], before: [['D', 'E'], ['E', 'A'], ['A', 'B'], ['B', 'C']], position: 0 },
     distractorRationales: {
       'B': 'B is fixed in slot 4 immediately before C.',
-      'C': 'C is explicitly fixed in slot 5.',
+      'E': 'E follows D, so E cannot be first.',
       'A': 'A must come after D.'
     },
     hints: ['Slot 5 is C, slot 4 is B. Place the remaining three in order.'],
     tags: ['ordering', 'slot-assignment', 'intermediate'],
-    metadata: { version: 1, dateAdded: '2026-10-18', timesServed: 0, userAccuracy: null }
+    metadata: { version: 2, dateAdded: '2026-10-18', timesServed: 0, userAccuracy: null }
   },
   {
     id: 'logic_syl_004',
@@ -327,19 +328,15 @@ export const LOGIC_PUZZLES = [
     question: 'What is the true identity of Gatekeeper X and Gatekeeper Y?',
     options: [
       'X is a Knave, and Y is a Knight.',
-      'Both X and Y are Knights.',
-      'Both X and Y are Knaves.',
+      'X is a Knight, and Y is a Knight.',
+      'X is a Knave, and Y is a Knave.',
       'X is a Knight, and Y is a Knave.'
     ],
-    correctAnswer: 'X is a Knave, and Y is a Knight.',
-    explanation: 'Case analysis: Notice X\'s statement: "Y is a Knave iff X is a Knight". If X is a Knight, X speaks truth, so Y is a Knave iff X is a Knight (which means Y is a Knave). But if Y is a Knave, Y\'s statement ("at least one is a Knight") must be false, meaning neither is a Knight (both are Knaves), contradicting X being a Knight! Thus X cannot be a Knight. Therefore X is a Knave. Since X is a Knave, X\'s claim is false: the negation of "Y is a Knave iff X is a Knight" means Y is NOT a Knave (so Y is a Knight). Check Y\'s statement: "At least one is a Knight" — since Y is a Knight, this is true! Everything is consistent.',
-    distractorRationales: {
-      'Both X and Y are Knights.': 'Contradicts X\'s assertion that Y is a Knave.',
-      'Both X and Y are Knaves.': 'If both were Knaves, Y\'s statement would be false, but that requires both to be Knaves, creating a circularity where X\'s statement becomes true.',
-      'X is a Knight, and Y is a Knave.': 'Generates an irresolvable contradiction with Y\'s statement.'
-    },
-    hints: ['Notice that if X is a Knight, Y is forced to be a Knave, which contradicts Y\'s statement.'],
+    correctAnswer: 'X is a Knave, and Y is a Knave.',
+    explanation: 'Test all four assignments. If X is truthful, X forces Y to be a Knave, but then Y’s statement that at least one is a Knight would be true, a contradiction. If X is a Knave and Y a Knight, X’s biconditional is true (both sides are false), another contradiction. Both Knaves works: X’s biconditional is false (true iff false), and Y’s claim is false. This is the unique consistent assignment.',
+    proof: { type: 'knights', labels: ['X', 'Y'], claims: [['iff', ['not', ['var', 'y']], ['var', 'x']], ['or', ['var', 'x'], ['var', 'y']]] },
+    hints: ['A biconditional is true when both sides are false. Check all four assignments.'],
     tags: ['knights-and-knaves', 'biconditional', 'expert'],
-    metadata: { version: 1, dateAdded: '2026-10-18', timesServed: 0, userAccuracy: null }
+    metadata: { version: 2, dateAdded: '2026-10-18', timesServed: 0, userAccuracy: null }
   }
 ];

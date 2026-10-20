@@ -126,7 +126,7 @@ export class SessionController {
       round.phase = 'summary'; round.completed = true;
       if (s.roundIndex === s.rounds.length - 1) {
         s.status = 'completed'; s.completedAt = now;
-        if (state.workouts[s.id]) state.workouts[s.id].completedAt = now;
+        if (state.workouts[s.id]) { state.workouts[s.id].completedAt = now; state.workouts[s.id].completedDate = localDayKey(now); }
         if (s.memoryId && state.memory?.id === s.memoryId) {
           state.memory.status = 'completed'; state.memory.completedAt = now;
           state.memoryHistory ||= [];

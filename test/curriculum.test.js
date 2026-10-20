@@ -35,3 +35,10 @@ test('procedural arithmetic is reproducible from a stored seed across all tiers'
     assert.notDeepEqual(first, arithmeticItems(config, 'another-seed'));
   }
 });
+test('reviewed legacy ordering and biconditional puzzles have unique consistent answers', () => {
+  for (const id of ['logic_order_002', 'logic_kk_002']) {
+    const item = BASE_CONTENT.find((q) => q.id === id); assert.equal(item.version, 2); assert.equal(verifyProof(item), true);
+  }
+  const gatekeepers = BASE_CONTENT.find((q) => q.id === 'logic_kk_002');
+  assert.equal(gatekeepers.options.find((o) => o.id === gatekeepers.correctOptionId).text, 'X is a Knave, and Y is a Knave.');
+});

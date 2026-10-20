@@ -85,7 +85,7 @@ export async function boot() {
   }
   function today() {
     const scope = createSessionScope(), state = repo.snapshot(), m = progressMetrics(state), active = Object.values(state.sessions).filter((s) => s.status === 'active');
-    const todayDone = Object.values(state.workouts).some((w) => w.completedAt && w.date === localDayKey() && !w.practice);
+    const todayDone = Object.values(state.workouts).some((w) => w.completedAt && (w.completedDate || w.date) === localDayKey() && !w.practice);
     container.innerHTML = `<div class="view-header"><div><h1 class="view-title">Today</h1><p class="view-desc">A little focused practice, at your pace.</p></div><div class="streak-pill">${m.currentStreak} day local streak</div></div>
       ${!state.preferences.onboarded ? `<div class="workout-card"><h2>Welcome to Sharp</h2><p>Practise memory, arithmetic, logic and reading. Your progress stays in this browser. Offline training works after the app cache is installed; keep backups to protect against storage being cleared.</p><p>There are no model downloads or developer uploads in this release. Reminders work while the app is open; calendar reminders are available in Settings.</p><button id="finishWelcome" class="btn btn-primary">Got it, let’s practise</button><a href="#/settings" class="btn btn-outline">Storage &amp; reminder options</a></div>` : ''}
       ${state.migration?.quarantine.length ? `<p class="question-feedback">${state.migration.quarantine.length} legacy records were quarantined. Original bytes are retained in your v2 backup; valid progress was migrated.</p>` : ''}
