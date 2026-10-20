@@ -16,6 +16,8 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci
+      - name: Verify pinned optional runtime build
+        run: npm run build:inference && git diff --exit-code -- assets/optional-runtime
       - name: Check JS syntax
         run: |
           for f in $(find . -name '*.js' -not -path './node_modules/*' -not -path './.git/*'); do

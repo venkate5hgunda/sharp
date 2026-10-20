@@ -52,6 +52,7 @@ test('offline snapshot includes the full app and dataset dependency graph', asyn
     }
   }
   assert.ok(manifest.assets.includes('data/domains/memory-clusters.js'));
+  assert.equal(manifest.assets.some((name) => name.startsWith('assets/optional-runtime/')), false, 'Optional model runtime must never enter shell precaching');
   assert.equal(manifest.assets.some((name) => name.split('/').some((part) => part.startsWith('.'))), false,
     'Local metadata such as .DS_Store must never become a deployment dependency');
 });

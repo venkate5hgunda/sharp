@@ -2,6 +2,7 @@
 // No successful UI acknowledgement occurs before IDBTransaction.complete.
 import { isRecord, isSafeData } from '../content-validation.js';
 import { validateAndMigrateBackup } from '../backup.js';
+import { getAllSharpData } from '../storage.js';
 
 export const DATA_VERSION = 2;
 export const DB_NAME = 'sharp-progress-v2';
@@ -62,6 +63,10 @@ export class Repository {
     });
     this.db.onversionchange = () => { this.close(); this.onStatus('Storage was updated in another tab. Reload Sharp to continue.'); };
     await this.update((state) => state || candidate, { initialize: true });
+    if (typeof window !== 'undefined' && globalThis.BroadcastChannel) {
+      this.channel = new BroadcastChannel(`sharp:repository:${this.name}`);
+      this.channel.onmessage = () => this.refresh().then(() => this.listeners.forEach((fn) => fn(this.snapshot()))).catch(() => {});
+    }
     return this;
   }
   snapshot() { if (!this.cached) throw new Error('Storage is not ready.'); return clone(this.cached); }
@@ -73,7 +78,7 @@ export class Repository {
       tx.oncomplete = () => resolve(req.result);
       tx.onabort = () => reject(tx.error || new Error('Storage read failed.'));
     });
-    this.cached = state;
+    if (!this.cached || state.revision >= this.cached.revision) this.cached = state;
     return this.snapshot();
   }
   async update(mutator, { initialize = false } = {}) {
@@ -100,19 +105,22 @@ export class Repository {
     // A slower completion must never regress a newer in-memory snapshot.
     if (!this.cached || state.revision >= this.cached.revision) this.cached = state;
     this.listeners.forEach((fn) => fn(this.snapshot()));
+    this.channel?.postMessage({ revision: state.revision });
     return this.snapshot();
   }
   async setPreferences(patch) {
     if (!isSafeData(patch)) throw new Error('Invalid preferences.');
     return this.update((state) => { Object.assign(state.preferences, patch); return state; });
   }
-  close() { this.db?.close(); this.db = null; }
+  close() { this.channel?.close(); this.db?.close(); this.db = null; }
 }
 
 export let repository;
 export async function initRepository(options = {}) {
   let legacyStorage;
   try { legacyStorage = globalThis.localStorage; } catch {}
+  // Finish an interrupted v1 restore before taking the migration snapshot.
+  if (legacyStorage) getAllSharpData();
   repository = new Repository({ legacyStorage, ...options });
   return repository.open();
 }

@@ -6,6 +6,8 @@ const ownedPrefix = `sharp:shell:${scope}:`;
 const shellCache = ownedPrefix + self.SHARP_OFFLINE.version;
 const assetURLs = new Set(self.SHARP_OFFLINE.assets.map((asset) => new URL(asset, scope).href));
 const indexURL = new URL('index.html', scope).href;
+const optionalRuntimeURLs = new Set(['client', 'worker'].map((name) => new URL(`assets/optional-runtime/webllm-0.2.86-${name}.js`, scope).href));
+const optionalRuntimeCache = `sharp:models:runtime:${scope}:0.2.86`;
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
@@ -32,6 +34,11 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== new URL(scope).origin || !url.href.startsWith(scope)) return;
   url.search = '';
   url.hash = '';
+  if (optionalRuntimeURLs.has(url.href)) {
+    // Populated only by an explicit download choice. Shell installation never fetches it.
+    event.respondWith(caches.open(optionalRuntimeCache).then(async (cache) => (await cache.match(url.href)) || fetch(request)));
+    return;
+  }
   if (!assetURLs.has(url.href) && request.mode !== 'navigate') return;
 
   event.respondWith((async () => {

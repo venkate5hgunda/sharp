@@ -24,3 +24,14 @@ test('independent constraint solver rejects ambiguity and tampered answers', () 
   const q = structuredClone(BASE_CONTENT.find((q) => q.proof)); q.correctOptionId = 'o1'; assert.equal(verifyProof(q), false);
   assert.deepEqual(shuffle([1,2,3,4], 'seed'), shuffle([1,2,3,4], 'seed'));
 });
+test('procedural arithmetic is reproducible from a stored seed across all tiers', async () => {
+  const { arithmeticItems } = await import('../js/session/content.js');
+  const { getGameConfig } = await import('../js/adaptive-engine.js');
+  for (const rating of [600, 1000, 1150, 1300, 1500, 1700, 2000]) {
+    const config = getGameConfig('math-arithmetic', rating);
+    const first = arithmeticItems(config, 'replay-proof');
+    assert.deepEqual(first, arithmeticItems(config, 'replay-proof'));
+    assert.ok(first.every(validateItem));
+    assert.notDeepEqual(first, arithmeticItems(config, 'another-seed'));
+  }
+});

@@ -45,3 +45,12 @@ test('calendar export uses local recurring times and foreground reminders respec
   assert.equal(dueReminder(state, new Date('2026-10-19T21:00:00')).id, '2026-10-19:recall');
   state.preferences.foregroundReminders = false; assert.equal(dueReminder(state), null);
 });
+test('skill trends compare like-for-like windows and withhold sparse or mixed-tier evidence', async () => {
+  const { comparableSlices } = await import('../js/session/metrics.js');
+  const attempts = Array.from({ length: 20 }, (_, i) => ({ id: String(i), timestamp: i, itemId: `q${i % 12}`, game: 'story-math', skill: 'quantity_tracking', tier: 2, contentVersion: 1,
+    inputMode: 'keyboard', scoring: 'binary-v1', score: i < 5 ? 0 : 1, activeMs: i < 10 ? 2000 : 1000 }));
+  const [slice] = comparableSlices(attempts); assert.equal(slice.previousAccuracy, .5); assert.equal(slice.recentAccuracy, 1);
+  assert.equal(slice.previousMs, 2000); assert.equal(slice.recentMs, 1000); assert.equal(slice.distinctItems, 12);
+  assert.ok(comparableSlices(attempts.map((a, i) => ({ ...a, tier: 1 + i % 2 }))).every((s) => !s.enough));
+  assert.equal(comparableSlices(attempts.map((a) => ({ ...a, practice: true }))).length, 0);
+});

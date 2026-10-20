@@ -61,6 +61,11 @@ export class SessionController {
       const s = state.sessions[id];
       if (!s || s.status !== 'active') throw new Error('This session is already completed or no longer available.');
       if (!takeover && s.owner !== this.owner && s.owner !== this.previousOwner && s.leaseUntil > now) throw new Error('Another tab is using this session. Close it, wait briefly, or choose Take over.');
+      const round = s.rounds[s.roundIndex];
+      if (round.pausedAt) {
+        const elapsed = Math.max(0, now - round.pausedAt), key = round.wasHidden ? 'hiddenMs' : 'pausedMs';
+        round.pendingTiming ||= {}; round.pendingTiming[key] = (round.pendingTiming[key] || 0) + elapsed; delete round.pausedAt;
+      }
       s.owner = this.owner; s.leaseUntil = now + LEASE_MS; s.updatedAt = now; return state;
     });
   }
@@ -91,13 +96,15 @@ export class SessionController {
         if (!item.options.some((o) => o.id === response)) throw new Error('Invalid option.');
         score = response === item.correctOptionId ? 1 : 0;
       }
-      for (const key of ['activeMs', 'hiddenMs', 'readingMs']) if (!Number.isFinite(timing[key] ?? 0) || (timing[key] ?? 0) < 0) throw new Error('Invalid response timing.');
+      for (const key of ['activeMs', 'hiddenMs', 'readingMs', 'pausedMs']) if (!Number.isFinite(timing[key] ?? 0) || (timing[key] ?? 0) < 0) throw new Error('Invalid response timing.');
       state.attempts[attemptId] = { id: attemptId, sessionId: s.id, roundId: `${s.id}:${s.roundIndex}`, itemId: item.id,
         contentVersion: item.version, game: round.game, domain: round.domain, skill: item.skill, tier: item.tier,
         response, score, scoring, activeMs: Math.round(timing.activeMs || 0), hiddenMs: Math.round(timing.hiddenMs || 0),
-        readingMs: Math.round(timing.readingMs || 0), practice: round.practice, interrupted: false,
+        readingMs: Math.round(timing.readingMs || 0), pausedMs: Math.round(timing.pausedMs || 0), practice: round.practice, interrupted: false,
+        inputMode: ['pointer', 'keyboard', 'mixed'].includes(timing.inputMode) ? timing.inputMode : 'unknown', timingPolicy: 'active-v1',
+        presentation: ['pattern-flash', 'corsi-span'].includes(round.game) ? 'visual' : 'single-choice',
         selectionReason: item.selectionReason || 'stored procedural stimulus', ...eventTime(now) };
-      round.attempts.push(attemptId); round.phase = 'feedback';
+      round.attempts.push(attemptId); round.phase = 'feedback'; delete round.pendingTiming;
     });
   }
   async next(id) {
@@ -111,7 +118,7 @@ export class SessionController {
       if (!state.rounds[id]) {
         const attempts = round.attempts.map((a) => state.attempts[a]);
         const eligible = attempts.filter((a) => !a.interrupted);
-        state.rounds[id] = { id, sessionId: s.id, game: round.game, domain: round.domain, tier: round.tier,
+        state.rounds[id] = { id, sessionId: s.id, game: round.game, domain: round.domain, tier: Math.round(eligible.reduce((sum, a) => sum + a.tier, 0) / (eligible.length || 1)),
           score: eligible.reduce((sum, a) => sum + a.score, 0), count: eligible.length,
           latencyMs: eligible.reduce((sum, a) => sum + a.activeMs, 0) / (eligible.length || 1), expectedMs: round.game.includes('math') ? 4500 : 18000,
           practice: round.practice, ratingVersion: RATING_VERSION, ...eventTime(now) };
@@ -134,8 +141,13 @@ export class SessionController {
     if (!s.rounds[s.roundIndex].completed || s.roundIndex >= s.rounds.length - 1) return;
     s.roundIndex++; s.rounds[s.roundIndex].phase = 'intro';
   }); }
-  async interrupt(id) { return this.change(id, (s) => {
+  async interrupt(id, timing = null, hidden = false) { return this.change(id, (s, state, now) => {
     const round = s.rounds[s.roundIndex];
+    if (round.phase === 'question') {
+      if (timing) round.pendingTiming = timing;
+      round.pausedAt ||= now; round.wasHidden = hidden;
+      s.interruptionCount = (s.interruptionCount || 0) + 1;
+    }
     // Timed exposure cannot continue fairly after suspension; replay the same unscored stimulus.
     if (['pattern-flash', 'corsi-span'].includes(round.game) && round.phase === 'question') round.phase = 'intro';
   }); }
@@ -153,7 +165,7 @@ export class SessionController {
         options: [{ id: 'yes', text: 'Yes, I studied it' }, { id: 'no', text: 'No, it is a foil' }],
         correctOptionId: item.target ? 'yes' : 'no', explanation: item.target ? `${item.word} was part of the original study set.` : `${item.word} was a foil; it was not in the original study set.`,
         origin: 'curated', validation: 'study-snapshot', target: item.target }));
-      const practice = memory.type === 'quick_timer' || !!memory.freeRecallPractised;
+      const practice = memory.type === 'quick_timer' || !!memory.freeRecallPractised || !memory.foils?.length;
       state.sessions[id] = { id, kind: 'delayed-memory', status: 'active', owner: this.owner, leaseUntil: now + LEASE_MS,
         createdAt: now, updatedAt: now, roundIndex: 0, memoryId: memory.id, actualDelayMs: now - memory.createdAt,
         rounds: [{ game: 'delayed-memory', domain: 'memory', tier: memory.tier || 2, items, position: 0, phase: 'intro', practice, attempts: [], completed: false }] };

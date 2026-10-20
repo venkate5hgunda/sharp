@@ -11,7 +11,9 @@ export function confirmAction({ title, message, confirm = 'Continue', danger = f
     dialog.setAttribute('aria-labelledby', heading.id); actions.append(cancel, accept); dialog.append(heading, text, actions);
     document.body.append(dialog);
     let done = false;
-    const finish = (value) => { if (done) return; done = true; dialog.close(); dialog.remove(); if (opener?.isConnected) opener.focus(); resolve(value); };
+    const routeAway = () => finish(false);
+    const finish = (value) => { if (done) return; done = true; window.removeEventListener('hashchange', routeAway); dialog.close(); dialog.remove(); if (opener?.isConnected) opener.focus(); resolve(value); };
+    window.addEventListener('hashchange', routeAway, { once: true });
     cancel.addEventListener('click', () => finish(false)); accept.addEventListener('click', () => finish(true));
     dialog.addEventListener('cancel', (event) => { event.preventDefault(); finish(false); });
     dialog.showModal(); cancel.focus();

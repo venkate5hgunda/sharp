@@ -8,6 +8,7 @@ async function walk(directory) {
   const entries = await readdir(path.join(root, directory), { withFileTypes: true });
   return (await Promise.all(entries.filter((entry) => !entry.name.startsWith('.')).map((entry) => {
     const relative = path.posix.join(directory, entry.name);
+    if (relative === 'assets/optional-runtime') return [];
     return entry.isDirectory() ? walk(relative) : [relative];
   }))).flat();
 }

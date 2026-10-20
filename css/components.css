@@ -940,6 +940,8 @@ input:checked + .slider:before {
 .sharp-dialog { max-width: 34rem; width: calc(100% - 2rem); padding: 2rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 1rem; }
 .sharp-dialog::backdrop { background: rgba(0,0,0,.65); }
 .settings-card table { width: 100%; border-collapse: collapse; margin-block: 1rem; }
+.table-scroll { max-width: 100%; overflow-x: auto; }
+.table-scroll th, .table-scroll td { overflow-wrap: anywhere; }
 .settings-card th, .settings-card td { text-align: left; padding: .65rem; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
 .settings-card caption { text-align: left; margin-block: .5rem; }
 .workout-card ul { list-style-position: inside; text-align: left; }

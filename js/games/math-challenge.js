@@ -233,18 +233,18 @@ function runMathSession(stage, mode, config, currentRating, onComplete, scope) {
 /**
  * Procedural arithmetic generator
  */
-export function generateArithmeticProblem(config) {
+export function generateArithmeticProblem(config, random = Math.random) {
   const { operators, maxNumber, termsCount } = config;
-  const op = operators[Math.floor(Math.random() * operators.length)];
+  const op = operators[Math.floor(random() * operators.length)];
 
   let prompt = '';
   let answer = 0;
 
   if (op === '+') {
-    const a = Math.floor(Math.random() * maxNumber) + 5;
-    const b = Math.floor(Math.random() * maxNumber) + 5;
+    const a = Math.floor(random() * maxNumber) + 5;
+    const b = Math.floor(random() * maxNumber) + 5;
     if (termsCount === 3) {
-      const c = Math.floor(Math.random() * (maxNumber / 2)) + 2;
+      const c = Math.floor(random() * (maxNumber / 2)) + 2;
       prompt = `${a} + ${b} + ${c} = ?`;
       answer = a + b + c;
     } else {
@@ -252,51 +252,51 @@ export function generateArithmeticProblem(config) {
       answer = a + b;
     }
   } else if (op === '-') {
-    const a = Math.floor(Math.random() * maxNumber) + 15;
-    const b = Math.floor(Math.random() * (a - 5)) + 3;
+    const a = Math.floor(random() * maxNumber) + 15;
+    const b = Math.floor(random() * (a - 5)) + 3;
     prompt = `${a} − ${b} = ?`;
     answer = a - b;
   } else if (op === '*') {
-    const a = Math.floor(Math.random() * (config.tier >= 4 ? 25 : 12)) + 3;
-    const b = Math.floor(Math.random() * 12) + 2;
+    const a = Math.floor(random() * (config.tier >= 4 ? 25 : 12)) + 3;
+    const b = Math.floor(random() * 12) + 2;
     prompt = `${a} × ${b} = ?`;
     answer = a * b;
   } else if (op === '/') {
-    const b = Math.floor(Math.random() * 11) + 2;
-    const mult = Math.floor(Math.random() * (config.tier >= 4 ? 20 : 12)) + 2;
+    const b = Math.floor(random() * 11) + 2;
+    const mult = Math.floor(random() * (config.tier >= 4 ? 20 : 12)) + 2;
     const a = b * mult;
     prompt = `${a} ÷ ${b} = ?`;
     answer = mult;
   } else if (op === '^') {
-    const base = Math.floor(Math.random() * 8) + 4;
+    const base = Math.floor(random() * 8) + 4;
     prompt = `${base}² = ?`;
     answer = base * base;
   } else {
     // Percentages: e.g. 15% of 80
     const percents = [10, 20, 25, 50];
-    const p = percents[Math.floor(Math.random() * percents.length)];
-    const val = (Math.floor(Math.random() * 10) + 1) * 20;
+    const p = percents[Math.floor(random() * percents.length)];
+    const val = (Math.floor(random() * 10) + 1) * 20;
     prompt = `${p}% of ${val} = ?`;
     answer = Math.round((p / 100) * val);
   }
 
-  const options = generateOptions(answer);
+  const options = generateOptions(answer, random);
   return { prompt, correctAnswer: answer, options };
 }
 
 /**
  * Procedural story problem generator
  */
-export function generateStoryProblem(tier) {
+export function generateStoryProblem(tier, random = Math.random) {
   const templates = [
     // Template 1: Fruit/Item exchange (Jack & Jill style)
     () => {
       const names = [['Jack', 'Jill'], ['Maya', 'Leo'], ['Emma', 'Noah'], ['Liam', 'Sophia']];
-      const [p1, p2] = names[Math.floor(Math.random() * names.length)];
-      const item = ['apples', 'oranges', 'peaches', 'books'][Math.floor(Math.random() * 4)];
-      const start = Math.floor(Math.random() * 20) + 15;
-      const given = Math.floor(Math.random() * 8) + 4;
-      const found = Math.floor(Math.random() * 6) + 3;
+      const [p1, p2] = names[Math.floor(random() * names.length)];
+      const item = ['apples', 'oranges', 'peaches', 'books'][Math.floor(random() * 4)];
+      const start = Math.floor(random() * 20) + 15;
+      const given = Math.floor(random() * 8) + 4;
+      const found = Math.floor(random() * 6) + 3;
 
       if (tier <= 2) {
         return {
@@ -304,7 +304,7 @@ export function generateStoryProblem(tier) {
           answer: start - given + found
         };
       } else {
-        const bonus = Math.floor(Math.random() * 5) + 2;
+        const bonus = Math.floor(random() * 5) + 2;
         return {
           prompt: `${p1} has <strong>${start} ${item}</strong>. ${p1} gives ${p2} <strong>${given}</strong>. ${p2} shares half of those with a friend, and gives ${p1} back <strong>${bonus}</strong> as a thank you. How many ${item} does ${p1} have now?`,
           answer: start - given + bonus
@@ -314,10 +314,10 @@ export function generateStoryProblem(tier) {
 
     // Template 2: Bakery / Inventory
     () => {
-      const baked = (Math.floor(Math.random() * 5) + 3) * 12; // dozens
+      const baked = (Math.floor(random() * 5) + 3) * 12; // dozens
       const soldMorning = Math.floor(baked * 0.5);
-      const afternoonBake = Math.floor(Math.random() * 15) + 10;
-      const soldAfternoon = Math.floor(Math.random() * 12) + 5;
+      const afternoonBake = Math.floor(random() * 15) + 10;
+      const soldAfternoon = Math.floor(random() * 12) + 5;
       return {
         prompt: `A bakery bakes <strong>${baked} muffins</strong> in the morning and sells <strong>${soldMorning}</strong>. In the afternoon, they bake <strong>${afternoonBake} more</strong> and sell <strong>${soldAfternoon}</strong>. How many muffins remain at closing?`,
         answer: (baked - soldMorning) + afternoonBake - soldAfternoon
@@ -326,7 +326,7 @@ export function generateStoryProblem(tier) {
 
     // Template 3: Travel & Speed
     () => {
-      const speed1 = 40 + Math.floor(Math.random() * 4) * 10; // 40, 50, 60, 70
+      const speed1 = 40 + Math.floor(random() * 4) * 10; // 40, 50, 60, 70
       const hours1 = 2;
       const speed2 = 60;
       const hours2 = 1.5;
@@ -339,7 +339,7 @@ export function generateStoryProblem(tier) {
 
     // Template 4: Shopping discount & budget
     () => {
-      const price = (Math.floor(Math.random() * 6) + 4) * 10; // 40, 50, 60...
+      const price = (Math.floor(random() * 6) + 4) * 10; // 40, 50, 60...
       const discountPercent = 20;
       const discountedPrice = price * 0.8;
       const coupon = 5;
@@ -350,15 +350,15 @@ export function generateStoryProblem(tier) {
     }
   ];
 
-  const chosen = templates[Math.floor(Math.random() * templates.length)]();
-  const options = generateOptions(chosen.answer);
+  const chosen = templates[Math.floor(random() * templates.length)]();
+  const options = generateOptions(chosen.answer, random);
   return { prompt: chosen.prompt, correctAnswer: chosen.answer, options };
 }
 
-function generateOptions(correctAnswer) {
+function generateOptions(correctAnswer, random) {
   const options = new Set([correctAnswer]);
   const offsets = [-10, -5, -2, -1, 1, 2, 5, 10, 15];
-  offsets.sort(() => Math.random() - 0.5);
+  shuffleOptions(offsets, random);
 
   for (const offset of offsets) {
     if (options.size >= 4) break;
@@ -375,5 +375,10 @@ function generateOptions(correctAnswer) {
     fallbackDelta += 2;
   }
 
-  return Array.from(options).sort(() => Math.random() - 0.5);
+  return shuffleOptions(Array.from(options), random);
+}
+
+function shuffleOptions(items, random) {
+  for (let i = items.length - 1; i > 0; i--) { const j = Math.floor(random() * (i + 1)); [items[i], items[j]] = [items[j], items[i]]; }
+  return items;
 }

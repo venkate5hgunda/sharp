@@ -7,9 +7,14 @@ import { audio } from '../audio.js';
 const titleFor = (id) => CATALOG.find((g) => g.id === id)?.title || id;
 export function renderSession(container, { repo, controller, id, navigate }) {
   const scope = createSessionScope(); let child = () => {}, paused = false, busy = false, error = '';
+  let getTiming = () => null;
   let leaseTimer;
+  scope.listen(container, 'keydown', (event) => { if (event.repeat && ['Enter', ' '].includes(event.key)) event.preventDefault(); });
   scope.addCleanup(() => child());
-  scope.addCleanup(() => { controller.release(id).catch(() => {}); });
+  scope.addCleanup(() => {
+    const save = current()?.status === 'active' ? controller.interrupt(id, getTiming()).catch(() => {}) : Promise.resolve();
+    save.finally(() => controller.release(id).catch(() => {}));
+  });
   function current() { return repo.snapshot().sessions[id]; }
   async function act(action) {
     if (busy || !scope.active) return;
@@ -27,7 +32,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
   scope.listen(document, 'visibilitychange', () => {
     if (!document.hidden || paused || current()?.status !== 'active') return;
     paused = true; child();
-    controller.interrupt(id).catch((cause) => { error = cause.message; }).finally(() => { if (scope.active) draw(); });
+    controller.interrupt(id, getTiming(), true).catch((cause) => { error = cause.message; }).finally(() => { if (scope.active) draw(); });
   });
   function draw() {
     child(); const part = createSessionScope(); child = part.dispose;
@@ -39,7 +44,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
       <div class="view-header"><div><p class="text-muted">${s.kind === 'workout' ? `Workout · Exercise ${s.roundIndex + 1} of ${s.rounds.length}` : 'Exercise session'}</p>
       <h1 class="view-title">${h(titleFor(round.game))}</h1><p>${round.practice ? 'Untimed practice · ratings unchanged' : 'Local progress · saved after each answer'}</p></div></div>
       <p id="sessionError" class="question-feedback" role="alert" ${error ? '' : 'hidden'}>${h(error)}</p><div id="sessionStage"></div>`;
-    part.listen(container.querySelector('#pauseSession') || new EventTarget(), 'click', () => act(async () => { await controller.interrupt(id); paused = true; }));
+    part.listen(container.querySelector('#pauseSession') || new EventTarget(), 'click', () => act(async () => { await controller.interrupt(id, getTiming()); paused = true; }));
     const stage = container.querySelector('#sessionStage');
     if (paused || error) {
       stage.innerHTML = `<div class="workout-card"><h2>Session paused</h2><p>Your completed answers are saved. Timed memory exposure restarts on resume.</p>
@@ -75,7 +80,10 @@ export function renderSession(container, { repo, controller, id, navigate }) {
   }
   function renderQuestion(stage, round, s, part) {
     const q = round.items[round.position];
-    let started = performance.now(), readingMs = 0;
+    let started = performance.now(), readingMs = round.pendingTiming?.readingMs || 0, reading = !!q.passage;
+    const base = round.pendingTiming || {};
+    getTiming = () => ({ activeMs: (base.activeMs || 0) + (reading ? 0 : performance.now() - started),
+      readingMs: readingMs + (reading ? performance.now() - started : 0), hiddenMs: base.hiddenMs || 0, pausedMs: base.pausedMs || 0 });
     stage.innerHTML = `<div class="math-question-card"><p>Question ${round.position + 1} of ${round.items.length} · Tier ${q.tier} · ${h(q.skill.replaceAll('_', ' '))}</p>
       ${q.passage ? `<h2>${h(q.title)}</h2><div class="comprehension-passage">${h(q.passage)}</div><button id="readingDone" class="btn btn-primary">Ready for the question</button>` : ''}
       ${q.premises?.length ? `<ul class="premises-list">${q.premises.map((p) => `<li>${h(p)}</li>`).join('')}</ul>` : ''}
@@ -84,14 +92,14 @@ export function renderSession(container, { repo, controller, id, navigate }) {
       <div class="logic-options-grid" role="group" aria-labelledby="questionPrompt">${q.options.map((o, i) => `<button type="button" class="btn logic-option-btn" data-val="${h(o.id)}"><span class="opt-key">${i + 1}</span><span>${h(o.text)}</span></button>`).join('')}</div></div></div>`;
     const btns = stage.querySelectorAll('[data-val]');
     let submitted = false, shortcut = () => {};
-    const choose = (value) => {
+    const choose = (value, inputMode = 'keyboard') => {
       if (submitted || stage.querySelector('#answerPhase').hidden) return; submitted = true; shortcut();
-      act(() => controller.answer(id, value, { activeMs: performance.now() - started, hiddenMs: 0, readingMs }, { roundIndex: s.roundIndex, position: round.position }));
+      act(() => controller.answer(id, value, { ...getTiming(), inputMode }, { roundIndex: s.roundIndex, position: round.position }));
     };
-    btns.forEach((button) => part.listen(button, 'click', () => choose(button.dataset.val)));
-    const enable = () => { shortcut = bindChoiceShortcuts(part, btns, choose); btns[0]?.focus(); };
+    btns.forEach((button) => part.listen(button, 'click', (e) => choose(button.dataset.val, e.detail === 0 ? 'keyboard' : 'pointer')));
+    const enable = () => { shortcut = bindChoiceShortcuts(part, btns, (value) => choose(value, 'keyboard')); btns[0]?.focus(); };
     if (q.passage) part.listen(stage.querySelector('#readingDone'), 'click', () => {
-      readingMs = performance.now() - started; started = performance.now(); stage.querySelector('#readingDone').hidden = true;
+      readingMs += performance.now() - started; started = performance.now(); reading = false; stage.querySelector('#readingDone').hidden = true;
       stage.querySelector('#answerPhase').hidden = false; enable();
     }); else enable();
   }
@@ -107,6 +115,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     part.listen(stage, 'keydown', (event) => { if (event.repeat && ['Enter', ' '].includes(event.key)) event.preventDefault(); });
   }
   function renderVisual(stage, round, s, part) {
+    getTiming = () => null;
     const q = round.items[round.position], pattern = round.game === 'pattern-flash', chosen = []; let submitted = false;
     const buttons = () => [...stage.querySelectorAll('[data-cell]')];
     const grid = () => `<div class="${pattern ? `pattern-grid grid-${q.gridSize}` : 'pattern-grid grid-3'}" role="group" aria-label="${pattern ? 'Pattern' : 'Sequence'} cells">${Array.from({ length: q.size }, (_, i) => `<button class="cell interactive-cell" data-cell="${i}" aria-label="${pattern ? `Cell ${i + 1}` : `Block ${String.fromCharCode(65 + i)}`}" aria-pressed="false" disabled>${pattern ? i + 1 : String.fromCharCode(65 + i)}</button>`).join('')}</div>`;
@@ -145,12 +154,22 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     if (pattern) exposePattern();
     else {
       let i = 0;
+      if (round.practice) {
+        controls.innerHTML = '<button id="nextBlock" class="btn btn-primary">Show first block</button>';
+        part.listen(controls.querySelector('button'), 'click', () => {
+          buttons().forEach((b) => b.classList.remove('is-lit'));
+          if (i === q.sequence.length) { recall(); return; }
+          buttons()[q.sequence[i++]].classList.add('is-lit');
+          status.textContent = `Study block ${i} of ${q.sequence.length}`;
+          controls.querySelector('button').textContent = i === q.sequence.length ? 'I am ready to recall' : 'Show next block';
+        });
+      }
       const flash = () => {
         if (i >= q.sequence.length) { recall(); return; }
         const b = buttons()[q.sequence[i++]]; b.classList.add('is-lit');
-        part.timeout(() => { b.classList.remove('is-lit'); part.timeout(flash, 250); }, round.practice ? 1500 : q.displayMs);
+        part.timeout(() => { b.classList.remove('is-lit'); part.timeout(flash, 250); }, q.displayMs);
       };
-      part.timeout(flash, 400);
+      if (!round.practice) part.timeout(flash, 400);
     }
     // Arrow keys move predictably within the grid; Space/Enter activate the cell.
     part.listen(stage, 'keydown', (event) => {
@@ -161,7 +180,8 @@ export function renderSession(container, { repo, controller, id, navigate }) {
   }
   act(async () => {
     if (current()?.status !== 'active') return;
-    await controller.claim(id); await controller.interrupt(id);
+    await controller.claim(id);
+    if (['pattern-flash', 'corsi-span'].includes(current().rounds[current().roundIndex].game)) await controller.interrupt(id);
   }).then(heartbeat);
   return scope.dispose;
 }

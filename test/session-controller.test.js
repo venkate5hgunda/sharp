@@ -67,3 +67,18 @@ test('practice is retained separately and cannot change ratings', async () => {
   await controller.begin(id); for (const q of repo.snapshot().sessions[id].rounds[0].items) { await controller.answer(id, q.correctOptionId); await controller.next(id); }
   const metrics = progressMetrics(repo.snapshot()); assert.equal(metrics.eligible, 0); assert.equal(metrics.ratings.logic, 1000); repo.close();
 });
+test('same-tab reload can rotate ownership without waiting for an unload write; stale page loses permission', async () => {
+  const { repo, controller } = await setup(); const id = await controller.start('logic-deduction');
+  const reloaded = new SessionController(repo, { owner: 'new-page', previousOwner: 'one' }); await reloaded.claim(id);
+  await assert.rejects(controller.begin(id), /another tab/); await reloaded.begin(id); repo.close();
+});
+test('paused and hidden intervals are stored separately from monotonic active response time', async () => {
+  const { repo } = await setup(); let time = 100000;
+  const controller = new SessionController(repo, { owner: 'clock', now: () => time });
+  const id = await controller.start('logic-deduction'); await controller.begin(id);
+  await controller.interrupt(id, { activeMs: 1000, readingMs: 300, hiddenMs: 0, pausedMs: 0 }, true); time += 120000;
+  await controller.claim(id); const round = repo.snapshot().sessions[id].rounds[0];
+  assert.equal(round.pendingTiming.hiddenMs, 120000); assert.equal(round.pendingTiming.activeMs, 1000);
+  await controller.answer(id, round.items[0].correctOptionId, { ...round.pendingTiming, activeMs: 1500 });
+  const attempt = Object.values(repo.snapshot().attempts)[0]; assert.equal(attempt.activeMs, 1500); assert.equal(attempt.hiddenMs, 120000); repo.close();
+});

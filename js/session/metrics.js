@@ -3,6 +3,26 @@ import { DEFAULT_RATINGS, calculateRatingDelta } from '../adaptive-engine.js';
 
 export const METRIC_VERSION = 'progress-v2';
 export const RATING_VERSION = 'elo-heuristic-v1';
+const median = (values) => { const sorted = [...values].sort((a, b) => a - b); return sorted.length ? sorted[Math.ceil(sorted.length / 2) - 1] : null; };
+export function comparableSlices(attempts) {
+  const groups = new Map();
+  attempts.filter((a) => a.scoring === 'binary-v1' && a.skill && !a.practice && !a.interrupted).forEach((a) => {
+    const key = [a.game, a.skill, a.tier, a.contentVersion, a.inputMode || 'unknown', a.timingPolicy || 'active-v1'].join(':');
+    if (!groups.has(key)) groups.set(key, []); groups.get(key).push(a);
+  });
+  return [...groups.values()].map((items) => {
+    items.sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id));
+    const windows = [items.slice(-20, -10), items.slice(-10)];
+    const enough = items.length >= 20;
+    const scores = windows.map((w) => w.length ? w.reduce((n, a) => n + a.score, 0) / w.length : null);
+    const correctTimes = windows.map((w) => w.filter((a) => a.score === 1).map((a) => a.activeMs));
+    return { game: items[0].game, skill: items[0].skill, tier: items[0].tier, inputMode: items[0].inputMode || 'unknown',
+      count: items.length, enough, previousAccuracy: enough ? scores[0] : null, recentAccuracy: enough ? scores[1] : null,
+      previousMs: enough && correctTimes.every((t) => t.length >= 5) ? median(correctTimes[0]) : null,
+      recentMs: enough && correctTimes.every((t) => t.length >= 5) ? median(correctTimes[1]) : null,
+      correctCounts: correctTimes.map((t) => t.length), distinctItems: new Set(items.map((a) => a.itemId)).size };
+  }).sort((a, b) => b.count - a.count);
+}
 export function projectRatings(state) {
   const ratings = { ...DEFAULT_RATINGS, ...state.ratingsBaseline };
   const transitions = {};
@@ -30,6 +50,7 @@ export function progressMetrics(state, now = new Date()) {
   let current = 0, cursor = days.has(today) ? today : yesterday;
   while (days.has(cursor)) { current++; cursor = localDayKey(shiftLocalDay(new Date(`${cursor}T12:00:00`), -1)); }
   const { ratings, transitions } = projectRatings(state);
+  const slices = comparableSlices(attempts);
   const snapshots = new Map(), running = { ...DEFAULT_RATINGS, ...state.ratingsBaseline };
   Object.values(state.rounds).filter((r) => !r.practice).sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id)).forEach((r) => {
     running[r.domain] = transitions[r.id]?.after || running[r.domain];
@@ -43,6 +64,6 @@ export function progressMetrics(state, now = new Date()) {
     workoutCount: Object.values(state.workouts).filter((w) => w.completedAt && !w.practice).length,
     startedCount: Object.keys(state.workouts).length,
     legacyRoundCount: state.legacy.session_history?.length || 0,
-    legacyStreak: state.legacy.streaks || null,
-    trend: binary.length < 20 ? 'Insufficient data: complete 20 comparable attempts in a skill before comparing trends.' : 'Choose a skill and tier to compare response times fairly.' };
+    legacyStreak: state.legacy.streaks || null, slices,
+    trend: slices.some((s) => s.enough) ? 'Comparable practice windows are shown below with their sample sizes.' : 'Insufficient data: complete 20 comparable attempts in a skill before comparing trends.' };
 }

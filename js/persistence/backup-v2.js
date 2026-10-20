@@ -53,6 +53,7 @@ export async function exportBackup(repo) {
 export async function readBackup(text) {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_BYTES) throw new Error('Backup exceeds 20 MiB.');
   let payload; try { payload = JSON.parse(text); } catch { throw new Error('File is not valid JSON.'); }
+  if (!isRecord(payload)) throw new Error('Unsupported backup schema.');
   if (payload.schemaVersion === 1) {
     const result = validateAndMigrateBackup(payload); if (!result.valid) throw new Error(result.error);
     const entries = Object.entries(result.data).map(([k, v]) => [`sharp:${k}`, JSON.stringify(v)]);

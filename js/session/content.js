@@ -66,10 +66,10 @@ export function selectQuestions(items, { domain, tier, count, seed, attempts = {
     selectionReason: Math.abs(q.tier - tier) ? 'skill coverage; nearby tier' : 'skill coverage; least exposed' }));
 }
 export function arithmeticItems(config, seed, count = 8, story = false) {
-  // Persist the generated snapshot immediately; refresh never generates a new challenge.
-  // The legacy procedural functions use Math.random, so identity is the stored stimulus, not a claimed reproducible seed.
+  const random = randomSource(seed);
+  // The seed reproduces the challenge; the committed snapshot also survives generator revisions.
   return Array.from({ length: count }, (_, i) => {
-    const p = story ? generateStoryProblem(config.tier) : generateArithmeticProblem(config);
+    const p = story ? generateStoryProblem(config.tier, random) : generateArithmeticProblem(config, random);
     return normalizeQuestion({ ...p, id: `generated.${seed}.${i}`, domain: 'math', difficultyTier: config.tier,
       skill: story ? 'quantity_tracking' : 'arithmetic', category: story ? 'story' : 'arithmetic', question: p.prompt,
       explanation: p.explanation || `The correct answer is ${p.correctAnswer}. Check each operation in order.` });

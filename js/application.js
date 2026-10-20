@@ -17,6 +17,9 @@ import { haptics } from './haptics.js';
 import { createId } from './core/identity.js';
 import { BASE_CONTENT, importedItems } from './session/content.js';
 import { domainFor } from './session/controller.js';
+import { DiagnosticsBroker } from './diagnostics/broker.js';
+import { FEATURES } from './core/feature-flags.js';
+import { TELEMETRY_CONFIG } from './diagnostics/config.js';
 export async function boot() {
   const container = document.querySelector('#appContainer'), banner = document.querySelector('#inAppBannerHost');
   const showStatus = (message) => { banner.textContent = message; banner.setAttribute('role', 'status'); };
@@ -36,6 +39,18 @@ export async function boot() {
   let previousOwner = null; const owner = createId('page');
   try { previousOwner = sessionStorage.getItem('sharp:page-owner'); sessionStorage.setItem('sharp:page-owner', owner); } catch {}
   const controller = new SessionController(repo, { owner, previousOwner }), preferences = repo.snapshot().preferences;
+  let transport = null;
+  if (FEATURES.remoteDeveloperTelemetry && TELEMETRY_CONFIG.publicProjectKey) {
+    try { const { PostHogTransport } = await import('./diagnostics/transport.js'); transport = new PostHogTransport(TELEMETRY_CONFIG); }
+    catch { showStatus('Developer sharing is unavailable. Training remains local.'); }
+  }
+  const diagnostics = new DiagnosticsBroker(repo, { transport });
+  if (transport) {
+    const flush = () => { if (!document.hidden) diagnostics.flush().catch(() => {}); };
+    setInterval(flush, 60000); window.addEventListener('online', flush); document.addEventListener('visibilitychange', flush);
+  }
+  window.addEventListener('error', () => diagnostics.record('app.error', { code: 'unknown' }));
+  window.addEventListener('unhandledrejection', () => diagnostics.record('app.error', { code: 'unknown' }));
   if (preferences.theme) setTheme(preferences.theme);
   audio.enabled = preferences.sound !== false; haptics.enabled = preferences.haptics !== false;
   const sound = document.querySelector('#soundToggle');
@@ -46,7 +61,7 @@ export async function boot() {
   window.addEventListener('pointerdown', unlock, { passive: true }); window.addEventListener('keydown', unlock);
   let cleanup = () => {}, routeVersion = 0;
   const navigate = (path) => { location.hash = `#/${path}`; };
-  const run = async (action) => { try { await action(); } catch (e) { showStatus(e.message); } };
+  const run = async (action) => { try { await action(); } catch (e) { showStatus(e.message); diagnostics.record('app.warning', { code: e.name === 'QuotaExceededError' ? 'quota' : 'other' }); } };
   async function route() {
     const version = ++routeVersion; cleanup(); cleanup = () => {};
     await repo.refresh(); if (version !== routeVersion) return;
@@ -63,7 +78,8 @@ export async function boot() {
     else if (path === 'session' && param) cleanup = renderSession(container, { repo, controller, id: param, navigate });
     else if (path === 'games' && param === 'delayed-memory') cleanup = renderMemory(container, { repo, controller, navigate });
     else if (path === 'games' && CATALOG.some((g) => g.id === param)) cleanup = exerciseIntro(param);
-    else if (path === 'diagnostics') { const { renderDiagnostics } = await import('./views/diagnostics-view.js'); if (version === routeVersion) cleanup = renderDiagnostics(container, repo); }
+    else if (path === 'model') { const { renderModel } = await import('./views/model-view.js'); if (version === routeVersion) cleanup = renderModel(container, repo); }
+    else if (path === 'diagnostics') { const { renderDiagnostics } = await import('./views/diagnostics-view.js'); if (version === routeVersion) cleanup = renderDiagnostics(container, repo, diagnostics); }
     else { navigate('today'); return; }
     const heading = container.querySelector('h1'); if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
   }

@@ -70,6 +70,10 @@ export function getTierLabel(tier) {
  * @returns {object} { newRating, delta, tier }
  */
 export function calculateRatingDelta(currentRating, targetTier, accuracy, averageLatencyMs, expectedLatencyMs = 4000) {
+  if (![currentRating, targetTier, accuracy, averageLatencyMs, expectedLatencyMs].every(Number.isFinite) ||
+    currentRating < 600 || currentRating > 2500 || targetTier < 1 || targetTier > 7 || accuracy < 0 || accuracy > 1 || averageLatencyMs < 0 || expectedLatencyMs <= 0) {
+    throw new Error('Invalid rating evidence.');
+  }
   const challengeRating = (targetTier - 1) * 150 + 900;
   const expectedAccuracy = 1 / (1 + Math.pow(10, (challengeRating - currentRating) / 400));
 
