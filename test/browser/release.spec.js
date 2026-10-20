@@ -60,6 +60,7 @@ test('delayed memory preserves committed study, gates readiness and completes fa
   await page.reload(); await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible(); await checkAccessibility(page);
   await page.clock.fastForward(181000); await page.getByRole('button', { name: 'Check readiness' }).click();
   await page.getByRole('button', { name: 'Start recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();
+  await expect(page.locator('#sessionStage')).toContainText(/Question 1 of \d+/);
   const count = Number((await page.locator('#sessionStage').innerText()).match(/Question 1 of (\d+)/)[1]);
   for (let i = 0; i < count; i++) {
     await page.locator('[data-val]').first().click();

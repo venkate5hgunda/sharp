@@ -88,6 +88,11 @@ button, input, select, textarea, summary, a, [tabindex] {
   -webkit-tap-highlight-color: transparent;
 }
 
+summary {
+  min-height: 44px;
+  padding-block: 10px;
+}
+
 html, body {
   min-height: 100vh;
   background-color: var(--bg);

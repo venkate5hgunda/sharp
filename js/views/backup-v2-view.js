@@ -15,7 +15,7 @@ export function renderBackup(container, repo) {
   const status = container.querySelector('#backupStatus');
   const run = async (action) => { try { await action(); } catch (e) { if (scope.active) status.textContent = e.message; } };
   scope.listen(container.querySelector('#exportProgress'), 'click', () => run(async () => {
-    downloadJSON(await exportBackup(repo), `sharp-backup-${localDayKey()}.json`); status.textContent = 'Backup downloaded.';
+    downloadJSON(await exportBackup(repo), `sharp-backup-${localDayKey()}.json`); status.textContent = 'Download started.';
   }));
   scope.listen(container.querySelector('#exportContent'), 'click', () => downloadJSON({ schemaVersion: 2, questions: [...BASE_CONTENT, ...importedItems(repo.snapshot().content)] }, 'sharp-curriculum-v2.json'));
   scope.listen(container.querySelector('#backupFile'), 'change', (event) => run(async () => {

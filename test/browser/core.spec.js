@@ -8,7 +8,7 @@ test('quiz feedback survives reload, completion appears once, and flag-off boot 
   const external = []; page.on('request', (r) => { if (!r.url().startsWith('http://127.0.0.1:8080') && !r.url().startsWith('data:')) external.push(r.url()); });
   await start(page); await page.locator('[data-val]').first().click(); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   const feedback = await page.locator('#sessionStage').innerText(); await page.reload();
-  await expect(page.locator('#sessionStage')).toHaveText(feedback);
+  await expect(page.locator('#sessionStage')).toHaveText(feedback, { useInnerText: true });
   await page.getByRole('button', { name: 'Next question', exact: true }).click();
   for (let i = 1; i < 8; i++) { await page.locator('[data-val]').first().click(); await page.getByRole('button', { name: i === 7 ? 'View results' : 'Next question', exact: true }).click(); }
   await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
