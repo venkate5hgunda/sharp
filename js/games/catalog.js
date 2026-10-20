@@ -4,72 +4,72 @@ import { DOMAINS } from '../adaptive-engine.js';
 export const CATALOG = [
   {
     id: 'delayed-memory',
-    title: 'Time-Capsule Recall',
+    title: 'Memory Recall',
     domain: DOMAINS.MEMORY,
     badge: 'Morning / Evening Protocol',
     icon: 'hourglass',
-    summary: 'Study items in the morning and recall them in the evening to measure and train real-world retention.',
-    description: 'Scientifically calibrated to train long-term memory consolidation. Items are introduced early in the day, then recalled after an interference period to track your forgetting curve.',
+    summary: 'Study words now. Recall them later.',
+    description: 'Study words now. Recall them later.',
     timeEstimate: '2–3 mins'
   },
   {
     id: 'pattern-flash',
-    title: 'Pattern & Interference',
+    title: 'Pattern Memory',
     domain: DOMAINS.FOCUS,
     badge: 'Interference Resistance',
     icon: 'grid',
-    summary: 'Memorize visual patterns, resist confusing distractor flashes, and reconstruct the originals from memory.',
-    description: 'Trains visual working memory under cognitive interference. After viewing target patterns, an active distractor phase attempts to disrupt your mental buffer before recall.',
+    summary: 'Remember a pattern. Rebuild it.',
+    description: 'Remember a pattern. Rebuild it.',
     timeEstimate: '3 mins'
   },
   {
     id: 'math-arithmetic',
-    title: 'Mental Arithmetic',
+    title: 'Mental Math',
     domain: DOMAINS.MATH,
     badge: 'Speed & Precision',
     icon: 'calculator',
-    summary: 'Adaptive calculations spanning addition, subtraction, multiplication, division, and multi-step operations.',
-    description: 'Dynamic arithmetic engine adjusting in real-time to your speed and accuracy. Scales from basic operations to complex multi-term mental math.',
+    summary: 'Quick calculations at your level.',
+    description: 'Quick calculations at your level.',
     timeEstimate: '2–3 mins'
   },
   {
     id: 'story-math',
-    title: 'Story Math & Comprehension',
+    title: 'Story Math',
     domain: DOMAINS.MATH,
     badge: 'Word Problems',
     icon: 'book-open',
-    summary: 'Translate descriptive story situations into mathematical solutions through progressive multi-step logic.',
-    description: 'Engaging real-world scenarios ("Jack gave Jill X, then bought Y..."). Combines reading comprehension, variable tracking, and quantitative calculation.',
+    summary: 'Solve everyday word problems.',
+    description: 'Solve everyday word problems.',
     timeEstimate: '3–4 mins'
   },
   {
     id: 'logic-deduction',
-    title: 'Deductive Syllogisms',
+    title: 'Logic',
     domain: DOMAINS.LOGIC,
     badge: 'Formal Reasoning',
     icon: 'git-commit',
-    summary: 'Analyze premises, evaluate syllogisms, and separate valid deductions from persuasive fallacies.',
-    description: 'Strengthens logical deduction and analytical thinking. Test whether conclusions strictly follow from categorical and conditional premises.',
+    summary: 'Find what follows from the facts.',
+    description: 'Find what follows from the facts.',
     timeEstimate: '3 mins'
   },
   {
     id: 'comprehension-inference',
-    title: 'Speed Inference',
+    title: 'Reading',
     domain: DOMAINS.COMPREHENSION,
     badge: 'Critical Reading',
     icon: 'file-text',
-    summary: 'Read concise analytical passages and deduce unstated logical implications under light time pressure.',
-    description: 'Sharpens verbal reasoning and rapid information extraction. Determine which claims must logically hold and identify hidden assumptions.',
+    summary: 'Read a passage. Find the evidence.',
+    description: 'Read a passage. Find the evidence.',
     timeEstimate: '3 mins'
   },
   {
     id: 'corsi-span',
-    title: 'Spatial Corsi Span',
+    title: 'Sequence Memory',
     domain: DOMAINS.FOCUS,
     badge: 'Working Memory',
     icon: 'layers',
-    summary: 'Classic neuroscience spatial memory task. Watch a sequence of blocks illuminate, then repeat in order.',
-    description: 'Measures and expands your visuospatial sketchpad capacity. Forward and reverse sequences scale continuously with your performance.',
+    summary: 'Watch the blocks. Repeat the order.',
+    description: 'Watch the blocks. Repeat the order.',
     timeEstimate: '2–3 mins'
   }
 ];

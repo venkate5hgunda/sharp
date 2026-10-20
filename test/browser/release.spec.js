@@ -28,12 +28,12 @@ async function completeRound(page, game) {
 }
 for (const game of ['pattern-flash', 'corsi-span', 'story-math', 'comprehension-inference']) {
   test(`${game}: accessible practice completes through shared lifecycle`, async ({ page }) => {
-    await page.goto(`/#/games/${game}`); await page.getByLabel('Untimed practice (unrated)', { exact: true }).check();
+    await page.goto(`/#/games/${game}`); await page.getByLabel('Untimed practice · unrated', { exact: true }).check();
     await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'How to practise' })).toBeVisible(); await checkAccessibility(page);
+    await expect(page.getByRole('heading', { name: 'Quick guide' })).toBeVisible(); await checkAccessibility(page);
     await completeRound(page, game); await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
     await checkAccessibility(page); await page.getByRole('button', { name: 'View progress', exact: true }).click();
-    await expect(page.getByText('Your next session starts the story')).toBeVisible(); await checkAccessibility(page);
+    await expect(page.getByText('No scored results yet')).toBeVisible(); await checkAccessibility(page);
   });
 }
 test('complete circuit commits one qualifying workout and survives reload', async ({ page }) => {
@@ -50,16 +50,16 @@ test('complete circuit commits one qualifying workout and survives reload', asyn
   }
   await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible(); await page.reload();
   await page.getByRole('button', { name: 'View progress', exact: true }).click();
-  await expect(page.getByText(/1 completed workouts from 1 starts · 1 day local streak/)).toBeVisible(); await checkAccessibility(page);
+  await expect(page.getByText(/1\/1 workouts · 1 day streak/)).toBeVisible(); await checkAccessibility(page);
 });
 test('delayed memory preserves committed study, gates readiness and completes fast-track recognition', async ({ page }) => {
   await page.clock.install(); await page.goto('/#/games/delayed-memory'); await page.getByRole('button', { name: 'Study a new set' }).click();
   const words = await page.locator('.study-items strong').allTextContents(); expect(words.length).toBeGreaterThan(0);
-  await page.getByLabel('Three-minute fast track', { exact: false }).check(); await page.getByRole('button', { name: 'Commit study set' }).click();
+  await page.getByLabel('3-minute practice', { exact: false }).check(); await page.getByRole('button', { name: 'Save study set' }).click();
   await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible(); await checkAccessibility(page);
   await page.clock.fastForward(181000); await page.getByRole('button', { name: 'Check readiness' }).click();
-  await page.getByRole('button', { name: 'Begin recognition recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();
+  await page.getByRole('button', { name: 'Start recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();
   const count = Number((await page.locator('#sessionStage').innerText()).match(/Question 1 of (\d+)/)[1]);
   for (let i = 0; i < count; i++) {
     await page.locator('[data-val]').first().click();

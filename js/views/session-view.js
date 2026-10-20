@@ -41,13 +41,13 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     const round = s.rounds[s.roundIndex];
     container.innerHTML = `<div class="game-nav-bar"><a href="#/today" class="btn btn-outline">Save &amp; exit</a>
       ${s.status === 'active' ? '<button id="pauseSession" class="btn btn-outline" type="button">Pause</button>' : ''}</div>
-      <div class="view-header"><div><p class="text-muted">${s.kind === 'workout' ? `Workout · Exercise ${s.roundIndex + 1} of ${s.rounds.length}` : 'Exercise session'}</p>
-      <h1 class="view-title">${h(titleFor(round.game))}</h1><p>${round.practice ? 'Untimed practice · ratings unchanged' : 'Local progress · saved after each answer'}</p></div></div>
+      <div class="view-header"><div><p class="text-muted">${s.kind === 'workout' ? `Workout · Exercise ${s.roundIndex + 1} of ${s.rounds.length}` : 'Exercise'}</p>
+      <h1 class="view-title">${h(titleFor(round.game))}</h1><p>${round.practice ? 'Untimed · unrated' : 'Autosaved'}</p></div></div>
       <p id="sessionError" class="question-feedback" role="alert" ${error ? '' : 'hidden'}>${h(error)}</p><div id="sessionStage"></div>`;
     part.listen(container.querySelector('#pauseSession') || new EventTarget(), 'click', () => act(async () => { await controller.interrupt(id, getTiming()); paused = true; }));
     const stage = container.querySelector('#sessionStage');
     if (paused || error) {
-      stage.innerHTML = `<div class="workout-card"><h2>Session paused</h2><p>Your completed answers are saved. Timed memory exposure restarts on resume.</p>
+      stage.innerHTML = `<div class="workout-card"><h2>Session paused</h2><p>Answers saved. Memory trials restart on resume.</p>
         <button id="resumeSession" class="btn btn-primary">Resume session</button>
         <button id="takeoverSession" class="btn btn-outline">Take over from another tab</button></div>`;
       part.listen(stage.querySelector('#resumeSession'), 'click', () => act(async () => { await controller.claim(id); paused = false; }));
@@ -56,22 +56,22 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     }
     if (round.phase === 'intro') {
       const visual = ['pattern-flash', 'corsi-span'].includes(round.game);
-      const example = round.game === 'pattern-flash' ? 'Watch the lit cells, ignore the distractor, then select the original cells. Selecting an extra cell reduces the fidelity score.'
-        : round.game === 'corsi-span' ? 'Watch the blocks, then repeat their exact order. Example: A → C → B means select A, then C, then B. This is forward recall.'
-        : round.game.includes('math') ? 'Example: 12 + 7 = 19. Select one answer, read the feedback, then choose Next.'
-        : round.game === 'logic-deduction' ? 'Use only the premises. Example: all A are B and all B are C implies all A are C. Do not assume a category has members unless stated.'
-        : 'Read the passage, then choose the answer supported by its evidence. Outside knowledge is unnecessary.';
-      stage.innerHTML = `<div class="workout-card"><h2>How to practise</h2><p>${example}</p>
-        <p>${visual && !round.practice ? 'Exposure is timed. Leaving this tab pauses the task. Use untimed practice for a self-paced alternative.' : 'Take your time. Use the buttons or number keys 1–4 for choices.'}</p>
-        ${visual ? '<p>This is a visual exercise. For a reading-based alternative, choose Logic from Exercises; its score is separate.</p>' : ''}
+      const example = round.game === 'pattern-flash' ? 'Remember the lit cells. Ignore the distractor. Extra selections reduce your score.'
+        : round.game === 'corsi-span' ? 'Repeat the blocks in order. Example: A → C → B.'
+        : round.game.includes('math') ? 'Choose the answer. Example: 12 + 7 = 19.'
+        : round.game === 'logic-deduction' ? 'Use only the given facts. All A are B; all B are C → all A are C.'
+        : 'Read, then answer using the passage.';
+      stage.innerHTML = `<div class="workout-card"><h2>Quick guide</h2><p>${example}</p>
+        <p>${visual && !round.practice ? 'Timed display. Leaving pauses the trial.' : 'Choose with buttons or keys 1–4.'}</p>
+        ${visual ? '<p>Prefer text? Try Logic instead.</p>' : ''}
         <button id="beginRound" class="btn btn-primary btn-large">Begin exercise</button></div>`;
       part.listen(stage.querySelector('#beginRound'), 'click', () => act(() => controller.begin(id)));
     } else if (round.phase === 'summary') {
       const state = repo.snapshot(), result = state.rounds[`${id}:${s.roundIndex}`], transition = projectRatings(state).transitions[result.id];
       stage.innerHTML = `<div class="result-summary-card"><h2 tabindex="-1">${s.status === 'completed' ? 'Session complete' : 'Exercise complete'}</h2>
         <p>${result.count} responses · ${Math.round(result.score / result.count * 100)}% ${round.game === 'pattern-flash' ? 'pattern fidelity' : 'accuracy'}.</p>
-        <p>${transition ? `Rating ${transition.before} → ${transition.after} (${transition.delta >= 0 ? '+' : ''}${transition.delta})` : 'Practice recorded. Your rating is unchanged.'}</p>
-        <p>Saved on this device.</p><button id="roundDone" class="btn btn-primary">${s.status === 'completed' ? 'View progress' : 'Next exercise'}</button></div>`;
+        <p>${transition ? `Rating ${transition.before} → ${transition.after} (${transition.delta >= 0 ? '+' : ''}${transition.delta})` : 'Practice saved · unrated'}</p>
+        <button id="roundDone" class="btn btn-primary">${s.status === 'completed' ? 'View progress' : 'Next exercise'}</button></div>`;
       stage.querySelector('h2').focus();
       part.listen(stage.querySelector('#roundDone'), 'click', () => s.status === 'completed' ? navigate('progress') : act(() => controller.nextRound(id)));
     } else if (round.phase === 'feedback') renderFeedback(stage, round, s, part);
@@ -107,8 +107,9 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     const q = round.items[round.position], attempt = repo.snapshot().attempts[`${id}:${s.roundIndex}:${round.position}`];
     const correct = q.options?.find((o) => o.id === q.correctOptionId)?.text;
     stage.innerHTML = `<div class="workout-card"><h2 tabindex="-1">${attempt.score === 1 ? 'Correct' : round.game === 'pattern-flash' ? `${Math.round(attempt.score * 100)}% fidelity` : 'Keep practising'}</h2>
-      <div class="question-feedback" role="status"><p>${h(q.explanation || (round.game === 'corsi-span' ? `Sequence: ${q.sequence.map((n) => String.fromCharCode(65 + n)).join(' → ')}` : `Target cells: ${q.sequence.map((n) => n + 1).join(', ')}`))}</p>
-      ${correct ? `<p>Correct answer: <strong>${h(correct)}</strong></p>` : ''}</div>
+      <div class="question-feedback" role="status">
+      ${correct ? `<p>Answer: <strong>${h(correct)}</strong></p>` : `<p>${h(round.game === 'corsi-span' ? `Sequence: ${q.sequence.map((n) => String.fromCharCode(65 + n)).join(' → ')}` : `Target cells: ${q.sequence.map((n) => n + 1).join(', ')}`)}</p>`}
+      ${q.explanation ? `<details><summary>Explanation</summary><p>${h(q.explanation)}</p></details>` : ''}</div>
       <button id="nextQuestion" class="btn btn-primary">${round.position === round.items.length - 1 ? 'View results' : 'Next question'}</button></div>`;
     stage.querySelector('#nextQuestion').focus();
     part.listen(stage.querySelector('#nextQuestion'), 'click', () => act(() => controller.next(id)));

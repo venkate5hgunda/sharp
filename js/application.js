@@ -86,13 +86,13 @@ export async function boot() {
   function today() {
     const scope = createSessionScope(), state = repo.snapshot(), m = progressMetrics(state), active = Object.values(state.sessions).filter((s) => s.status === 'active');
     const todayDone = Object.values(state.workouts).some((w) => w.completedAt && (w.completedDate || w.date) === localDayKey() && !w.practice);
-    container.innerHTML = `<div class="view-header"><div><h1 class="view-title">Today</h1><p class="view-desc">A little focused practice, at your pace.</p></div><div class="streak-pill">${m.currentStreak} day local streak</div></div>
-      ${!state.preferences.onboarded ? `<div class="workout-card"><h2>Welcome to Sharp</h2><p>Practise memory, arithmetic, logic and reading. Your progress stays in this browser. Offline training works after the app cache is installed; keep backups to protect against storage being cleared.</p><p>There are no model downloads or developer uploads in this release. Reminders work while the app is open; calendar reminders are available in Settings.</p><button id="finishWelcome" class="btn btn-primary">Got it, let’s practise</button><a href="#/settings" class="btn btn-outline">Storage &amp; reminder options</a></div>` : ''}
-      ${state.migration?.quarantine.length ? `<p class="question-feedback">${state.migration.quarantine.length} legacy records were quarantined. Original bytes are retained in your v2 backup; valid progress was migrated.</p>` : ''}
-      ${active.length ? `<div class="workout-card"><h2>Continue where you left off</h2><ul>${active.map((s) => `<li><a class="btn btn-outline" href="#/session/${h(s.id)}">Resume ${h(s.kind === 'workout' ? 'workout' : CATALOG.find((g) => g.id === s.kind)?.title || s.kind)} · exercise ${s.roundIndex + 1}</a></li>`).join('')}</ul></div>` : ''}
-      <div class="workout-card"><p class="workout-card-badge">${todayDone ? 'Today’s workout is complete' : 'Daily circuit'}</p><h2>Four ways to practise</h2><p>Pattern memory → Arithmetic → Logic → Reading. About 8 minutes, with a saved checkpoint after every answer. You can leave and resume.</p><p>Pause during a memory exposure restarts that trial. Earlier answers remain saved.</p>
-      <label><input id="practiceWorkout" type="checkbox"> Untimed practice (does not affect ratings or daily streak)</label><p><button id="startCircuit" class="btn btn-primary btn-large">${todayDone ? 'Start another workout' : 'Start workout'}</button></p></div>
-      <div class="workout-card"><h2>Time-capsule recall</h2><p>${state.memory?.status === 'committed' ? `Your saved study set ${Date.now() >= state.memory.readyAt ? 'is ready for recall.' : 'is waiting for its recall interval.'}` : 'Study a new themed set now and return for delayed recall.'}</p><a class="btn btn-outline" href="#/games/delayed-memory">Open memory practice</a></div>`;
+    container.innerHTML = `<div class="view-header"><div><h1 class="view-title">Today</h1><p class="view-desc">A few minutes. A sharper day.</p></div><div class="streak-pill">${m.currentStreak} day streak</div></div>
+      ${!state.preferences.onboarded ? `<div class="workout-card"><h2>Welcome to Sharp</h2><p>Train a little each day. Progress stays on this device.</p><button id="finishWelcome" class="btn btn-primary">Let’s go</button></div>` : ''}
+      ${state.migration?.quarantine.length ? `<p class="question-feedback">${state.migration.quarantine.length} older records need review. Originals are saved in your backup.</p>` : ''}
+      ${active.length ? `<div class="workout-card"><h2>Pick up where you left off</h2><ul>${active.map((s) => `<li><a class="btn btn-outline" href="#/session/${h(s.id)}">Resume ${h(s.kind === 'workout' ? 'workout' : CATALOG.find((g) => g.id === s.kind)?.title || s.kind)} · exercise ${s.roundIndex + 1}</a></li>`).join('')}</ul></div>` : ''}
+      <div class="workout-card"><p class="workout-card-badge">${todayDone ? 'Today’s workout is complete' : 'Daily circuit'}</p><h2>Your daily workout</h2><p>Memory · Math · Logic · Reading</p><p>4 exercises · About 8 minutes · Autosaved</p>
+      <label><input id="practiceWorkout" type="checkbox"> Untimed practice · no ratings or streak</label><p><button id="startCircuit" class="btn btn-primary btn-large">${todayDone ? 'Start another workout' : 'Start workout'}</button></p></div>
+      <div class="workout-card"><h2>Time-capsule recall</h2><p>${state.memory?.status === 'committed' ? `Your study set ${Date.now() >= state.memory.readyAt ? 'is ready for recall.' : 'is saved for later.'}` : 'Study now. Recall later.'}</p><a class="btn btn-outline" href="#/games/delayed-memory">Open memory practice</a></div>`;
     scope.listen(container.querySelector('#finishWelcome') || new EventTarget(), 'click', () => run(async () => { await repo.setPreferences({ onboarded: true }); if (scope.active) route(); }));
     scope.listen(container.querySelector('#startCircuit'), 'click', () => run(async () => { const button = container.querySelector('#startCircuit'); button.disabled = true;
       const practice = container.querySelector('#practiceWorkout').checked; const id = await controller.start('workout', { practice }); if (scope.active) navigate(`session/${id}`); }));
@@ -100,7 +100,7 @@ export async function boot() {
   }
   function exercises() {
     const scope = createSessionScope();
-    container.innerHTML = `<h1 class="view-title">Exercises</h1><p>Choose a skill, or use practice mode to explore without changing ratings.</p><label for="domainFilter">Filter by domain</label><select id="domainFilter"><option value="all">All domains</option>${['memory', 'math', 'logic', 'comprehension', 'focus'].map((d) => `<option>${d}</option>`).join('')}</select><div class="games-grid">${CATALOG.map((g) => `<article class="game-catalog-card" data-domain="${g.domain}"><span class="card-domain-badge">${h(g.domain)}</span><h2>${h(g.title)}</h2><p>${h(g.summary)}</p><a class="btn btn-primary" href="#/games/${g.id}">Open ${h(g.title)}</a></article>`).join('')}</div>`;
+    container.innerHTML = `<h1 class="view-title">Exercises</h1><p>Pick a skill.</p><label for="domainFilter">Domain</label><select id="domainFilter"><option value="all">All domains</option>${['memory', 'math', 'logic', 'comprehension', 'focus'].map((d) => `<option>${d}</option>`).join('')}</select><div class="games-grid">${CATALOG.map((g) => `<article class="game-catalog-card" data-domain="${g.domain}"><span class="card-domain-badge">${h(g.domain)}</span><h2>${h(g.title)}</h2><p>${h(g.summary)}</p><a class="btn btn-primary" href="#/games/${g.id}">Open ${h(g.title)}</a></article>`).join('')}</div>`;
     scope.listen(container.querySelector('#domainFilter'), 'change', (e) => container.querySelectorAll('[data-domain]').forEach((card) => { card.hidden = e.target.value !== 'all' && card.dataset.domain !== e.target.value; })); return scope.dispose;
   }
   function exerciseIntro(game) {
@@ -108,7 +108,7 @@ export async function boot() {
     const selectable = !['math-arithmetic', 'pattern-flash', 'corsi-span'].includes(game);
     const items = [...BASE_CONTENT, ...importedItems(repo.snapshot().content)].filter((q) => q.domain === domainFor(game));
     const choices = (key) => [...new Set(items.map((q) => q[key]))].sort().map((value) => `<option value="${h(value)}">${h(value.replaceAll('_', ' '))}</option>`).join('');
-    container.innerHTML = `<h1 class="view-title">${h(info.title)}</h1><div class="workout-card"><p>${h(info.summary)}</p><p>You’ll see instructions and an example before the first question. Responses are saved individually. This is cognitive practice, not a validated assessment.</p><label><input id="practiceExercise" type="checkbox"> Untimed practice (unrated)</label>
+    container.innerHTML = `<h1 class="view-title">${h(info.title)}</h1><div class="workout-card"><p>${h(info.summary)}</p><label><input id="practiceExercise" type="checkbox"> Untimed practice · unrated</label>
       ${selectable ? `<p><label for="skillChoice">Skill</label><select id="skillChoice"><option value="">Balanced coverage</option>${choices('skill')}</select></p><p><label for="categoryChoice">Category</label><select id="categoryChoice"><option value="">All categories</option>${choices('category')}</select></p>` : ''}
       <p><button id="startExercise" class="btn btn-primary">Start exercise</button><a class="btn btn-outline" href="#/exercises">Back to Exercises</a></p></div>`;
     scope.listen(container.querySelector('#startExercise'), 'click', () => run(async () => { const practice = container.querySelector('#practiceExercise').checked; container.querySelector('#startExercise').disabled = true;
@@ -124,8 +124,8 @@ export async function boot() {
   }
   setInterval(() => run(checkReminder), 60000);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js', { scope: './', updateViaCache: 'none' }).then((registration) => {
-    if (!navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(() => showStatus('Offline cache installed. Keep a backup of your local progress.'));
-    registration.addEventListener('updatefound', () => { const worker = registration.installing; worker?.addEventListener('statechange', () => { if (worker.state === 'installed' && navigator.serviceWorker.controller) showStatus('Update ready. Save and close every Sharp tab, then reopen to use it.'); }); });
-  }).catch(() => showStatus('Offline setup could not finish. Keep this tab online and reopen Sharp to retry.'));
+    if (!navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(() => showStatus('Ready offline. Keep a backup.'));
+    registration.addEventListener('updatefound', () => { const worker = registration.installing; worker?.addEventListener('statechange', () => { if (worker.state === 'installed' && navigator.serviceWorker.controller) showStatus('Update ready. Close all Sharp tabs, then reopen.'); }); });
+  }).catch(() => showStatus('Offline setup failed. Reopen while online to retry.'));
   await route(); await checkReminder();
 }
