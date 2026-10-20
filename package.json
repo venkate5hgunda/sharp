@@ -11,7 +11,8 @@
     "test": "node --test test/*.test.js",
     "start": "python3 -m http.server 8080",
     "test:browser": "playwright test",
-    "build:inference": "node scripts/build-inference.mjs"
+    "build:inference": "node scripts/build-inference.mjs",
+    "prepare:inference-pilot": "node scripts/prepare-inference-pilot.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
