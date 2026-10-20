@@ -13,6 +13,8 @@ Evidence recorded 2026-10-19 (America/Los_Angeles). Live app: https://venkate5hg
 
 The first concise-copy browser run exposed assertion/race problems and a small disclosure target. Visible-text comparison now excludes collapsed explanations, memory recognition waits for the committed first question, and summaries have a minimum 44px touch height. Accessibility rules were retained.
 
+A subsequent run exposed a test race in the held-Enter regression: it sent Enter before the asynchronous Begin transition had focused the first answer. That test now waits for answer focus before exercising held-key behavior. This changes test synchronization without relaxing the held-key assertions.
+
 ## Live app checks
 
 Checked the actual GitHub Pages app in Chrome, using its controls rather than modifying browser storage or invoking internal application methods:

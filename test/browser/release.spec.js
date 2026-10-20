@@ -90,6 +90,7 @@ test('installed shell reloads offline into an unvisited exercise', async ({ page
 test('held Enter cannot skip feedback or answer the following question', async ({ page }) => {
   await page.goto('/#/games/math-arithmetic'); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
   await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
+  await expect(page.locator('[data-val]').first()).toBeFocused();
   await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   await page.keyboard.up('Enter'); await page.keyboard.down('Enter'); await expect(page.getByText(/Question 2 of 8/)).toBeVisible();
