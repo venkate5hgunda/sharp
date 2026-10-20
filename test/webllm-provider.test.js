@@ -19,6 +19,14 @@ function setup(overrides = {}, preparationTimeoutMs = 100) {
   return { provider: new WebLLMProvider({ enabled: true, dependencies, preparationTimeoutMs }), resources };
 }
 
+test('a matching profile ID cannot replace pinned artifacts or bypass the download choice', async () => {
+  let probes = 0;
+  const { provider } = setup({ probe: async () => { probes++; return { eligible: true }; } });
+  await assert.rejects(provider.prepare({ ...MODEL_PROFILE, model: 'https://untrusted.example/' }, choice), /download_choice_required/);
+  await assert.rejects(provider.prepare(MODEL_PROFILE), /download_choice_required/);
+  assert.equal(probes, 0); provider.dispose();
+});
+
 test('preparation deadline covers probes, runtime downloads, SDK imports and worker loading', async () => {
   for (const phase of ['probe', 'cacheRuntime', 'loadSDK', 'engine']) {
     const stalled = deferred();
@@ -80,5 +88,21 @@ test('task timeout tears down the generating worker and returns curated fallback
   assert.equal(result.reason, 'timeout'); assert.equal(result.source, 'curated-fallback');
   assert.equal(resources.workers[0].terminated, true); assert.equal(provider.engine, null);
   assert.equal((await service.runTask({ taskId: 'arithmetic-explanation', input: GOLDEN[0].input })).reason, 'not_ready');
+  service.dispose();
+});
+
+test('stream timings use runtime decode telemetry and validated complete output', async () => {
+  const { provider } = setup({ loadSDK: async () => ({ CreateWebWorkerMLCEngine: async () => ({
+    chat: { completions: { async *create() {
+      yield { choices: [{ delta: { content: '{"answer":12,' } }] };
+      yield { choices: [{ delta: { content: '"style":"concise"}' }, finish_reason: 'stop' }] };
+      yield { choices: [], usage: { completion_tokens: 14, extra: { decode_tokens_per_s: 321.756 } } };
+    } } }
+  }) }) });
+  await provider.prepare(MODEL_PROFILE, choice);
+  const service = new IntelligenceService({ provider });
+  const result = await service.runTask({ taskId: 'arithmetic-explanation', input: GOLDEN[0].input });
+  assert.equal(result.source, 'model'); assert.equal(result.timings.outputTokens, 14);
+  assert.equal(result.timings.decodeTokensPerSecond, 321.76); assert.equal(provider.state, 'ready');
   service.dispose();
 });
