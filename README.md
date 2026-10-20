@@ -10,7 +10,7 @@ Progress stays in IndexedDB. Migration archives the original `sharp:*` localStor
 
 Offline training works after the service worker finishes installing. Updates wait for all existing Sharp tabs to close so an active session keeps one release. Reminders work while the app is open; Settings can export calendar reminders. There is no server push scheduler.
 
-Browser inference and all remote developer sharing are **disabled**. Startup does not download model weights or the optional model runtime. Local diagnostics includes synthetic golden/holdout evaluation, failure scenarios and JSON exports. The pinned WebLLM candidate and download controls are preparation for a separately qualified pilot. [Model hosting, downloads and operations](docs/INTELLIGENCE_OPERATIONS.md) explains the controls and remaining device/vendor gates.
+Browser inference and all remote developer sharing are **disabled**. Startup does not download model weights or the optional runtime. Local diagnostics includes synthetic evaluations, failure scenarios and JSON exports. The pinned WebLLM candidate has initial desktop execution/cancellation evidence from an isolated pilot; full qualification remains pending. [Model hosting, measured results and operations](docs/INTELLIGENCE_OPERATIONS.md) explains the controls and remaining gates.
 
 ## Development
 

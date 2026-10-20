@@ -23,7 +23,7 @@ Only `arithmetic-explanation` is registered. Its input is a bounded, independent
 
 The service owns request identity, one active task, a maximum 10-second task deadline, cancellation, JSON/schema/semantic validation and curated fallback. A fallback is never counted as an accepted provider result. Cached results are revalidated; identity includes canonical input, prompt/system/schema/validator version, model/runtime artifact identity, decoding and locale. Cache retention is seven days, at most 100 entries. Local traces retain metadata, not arbitrary raw prompts or output. Evaluation can retain approved synthetic numeric fixture input locally to reproduce a failure.
 
-The optional provider has a 180-second worker-load deadline, a two-failure preparation limit per provider instance, cancellation, device-loss teardown and recoverable status. Streamed tokens are collected privately; only a complete, validated JSON response is accepted. Reports include total latency, time to first token, generation time and output-token throughput where supplied. The current screen does not promise a successfully downloaded/qualified model.
+The optional provider has a 180-second deadline covering the complete probe/cache/download/import/worker preparation, a two-failure preparation limit per provider instance, cancellation, device-loss teardown and recoverable status. Cancellation aborts runtime requests and terminates a generating worker; late preparation completions cannot make a cancelled provider ready. Streamed tokens are collected privately; only complete, validated JSON is accepted. Reports include observed total latency/TTFT/generation time and runtime-reported decode throughput where supplied. The screen does not promise a qualified model.
 
 ## Evaluate and reproduce
 
@@ -31,7 +31,25 @@ Open Settings → Developer tools. Run Golden (four cases) and Holdout (three ca
 
 The same 21-case suite runs locally in Node tests. Browser tests verify the actual evaluation rendering and disabled download controls in Chromium and mobile WebKit. A stub report measures the harness, not model quality.
 
-For a physical pilot, use a separate development deployment with the inference flag explicitly edited and keep generated scored items disabled. Record device/OS/browser, exact profile pins, network conditions, cold preparation time and bytes, warm start, TTFT, generation p50/p95, accepted/fallback rates, cancellation, hidden-tab handling, cache removal, offline reuse, device loss, repeated/sustained execution, memory/power observations and thermal behavior. Run all 21 fixtures plus independently reviewed additions. Attach raw reports and declare each supported profile; do not extrapolate mobile support from desktop or emulation. No physical profile is qualified by this release.
+Prepare an isolated pilot with `npm run prepare:inference-pilot`. It copies only static app assets into a new temporary directory, enables only browser inference there and regenerates the complete offline manifest. Release files, generated scored items and remote-sharing flags remain unchanged. Serve the printed directory with `python3 -m http.server 8085 --bind 127.0.0.1 --directory /path/printed/by/the/command`, then open `http://127.0.0.1:8085/#/model`. Download still requires the checkbox and button. Close pilot tabs and stop the server after testing. Do not deploy the pilot directory as the public app.
+
+Record device/OS/browser, exact profile pins, network conditions, cold preparation time and bytes, warm start, TTFT, generation p50/p95, accepted/fallback rates, cancellation, hidden-tab handling, cache removal, offline reuse, device loss, repeated/sustained execution, memory/power observations and thermal behavior. Run all 21 fixtures plus independently reviewed additions. Attach raw reports and declare each supported profile; do not extrapolate mobile support from desktop or emulation. No complete physical profile is qualified by this release.
+
+## Desktop pilot evidence
+
+Measured on 2026-10-19 using an actual Apple M5 Pro desktop (`Mac17,9`, 48 GiB), macOS 27.0.1 and Chrome 155.0.8059.85. The isolated local origin was `http://127.0.0.1:8085`; the production deployment remained disabled. This is real WebGPU model execution, not a stub or browser emulation.
+
+| Run | Source | Preparation | Accepted / total | Fallbacks | Task p50 / p95 | Slowest task |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| First observed load | `df8db42` | 20,726 ms | 21 / 21 | 0 | 92 / 112 ms | 1,759 ms |
+| Cached load | `76d099d` | 346 ms | 21 / 21 | 0 | 88 / 102 ms | 187 ms |
+| After cancellation/restart | `76d099d` | 345 ms | 21 / 21 | 0 | 95 / 103 ms | 186 ms |
+
+Raw reports: [first load](validation/model-desktop-initial.json), [cached load](validation/model-desktop-cached.json), [recovery](validation/model-desktop-recovery.json). [Browser screenshot](validation/model-desktop-cached.png). Every report was checked against the seven exact fixtures, three repeats, pinned profile, semantic answers and reported counts/percentiles. Outputs were all `source: model`; fallback outputs were not counted as accepted.
+
+Observed preparation cancellation returned a cancelled status with the benchmark disabled. Re-preparation then completed and the full suite passed. Navigating back to training disposed the model; a new math response (26 − 8 = 18) produced normal feedback. The first observed load displayed actual parameter-download progress; transfer bytes and a guaranteed empty-cache cold start were not independently measured. Its first task took 1,759 ms, so the p95 alone hides a startup outlier. The early reports' `decodeTokensPerSecond` field was an application estimate and is not used for qualification; `0d2b5da` changes subsequent reports to the runtime's decode telemetry.
+
+These are seven narrow arithmetic/JSON fixtures, not evidence of general teaching quality. Offline model reuse, forced device loss, cache removal, long sustained runs, peak memory, power and thermals remain unmeasured. No mobile target has been tested physically. Keep the profile unqualified and public inference disabled.
 
 ## Local diagnostics and optional transport
 

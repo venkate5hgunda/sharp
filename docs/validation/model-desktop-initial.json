@@ -1,0 +1,580 @@
+{
+  "profile": {
+    "id": "smollm2-360m-eval",
+    "runtime": "@mlc-ai/web-llm@0.2.86",
+    "qualified": false,
+    "modelId": "SmolLM2-360M-Instruct-q4f16_1-MLC",
+    "weightsRevision": "3a622fd89e0216e8bb10c410c007c786baa8a033",
+    "libraryRevision": "00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0",
+    "model": "https://huggingface.co/mlc-ai/SmolLM2-360M-Instruct-q4f16_1-MLC/resolve/3a622fd89e0216e8bb10c410c007c786baa8a033/",
+    "modelLib": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0/web-llm-models/v0_2_86/base/SmolLM2-360M-Instruct-q4f16_1_cs1k-webgpu.wasm",
+    "requiredFeatures": [
+      "shader-f16"
+    ],
+    "registryVRAM_MB": 376.06,
+    "contextTokens": 1024,
+    "outputTokens": 128,
+    "artifactBytes": 213648914,
+    "libraryBytes": 6408980,
+    "qualification": "No physical device has been certified.",
+    "license": "Apache-2.0 (SmolLM2); verify upstream artifact notices before redistribution."
+  },
+  "preparation": {
+    "state": "ready",
+    "provider": "webllm",
+    "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0",
+    "qualified": false,
+    "loadMs": 20726,
+    "capability": {
+      "version": 1,
+      "secure": true,
+      "indexedDB": true,
+      "worker": true,
+      "webgpu": true,
+      "shaderF16": true,
+      "bufferLimits": true,
+      "eligible": true,
+      "reason": "advisory_probe_passed"
+    }
+  },
+  "evaluation": {
+    "version": "sharp-eval-v1",
+    "startedAt": 1792469474997,
+    "completedAt": 1792469478602,
+    "cancelled": false,
+    "count": 21,
+    "accepted": 21,
+    "fallbackCount": 0,
+    "acceptedRate": 1,
+    "p50Ms": 92,
+    "p95Ms": 112,
+    "qualification": "Fixture evaluation only; this does not certify physical devices.",
+    "results": [
+      {
+        "fixtureId": "add-zero",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_e7e67d46-8cc2-4c8a-9f19-6f976316a241",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 12,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 1759,
+          "ttftMs": 1527,
+          "generationMs": 1758,
+          "outputTokens": 14,
+          "decodeTokensPerSecond": 61
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "negative",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_16c42a05-aaa7-425d-a441-4ed87397bd92",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -11,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 98,
+          "ttftMs": 24,
+          "generationMs": 97,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 204
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "multiply",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_af6625cd-0548-4174-9029-741b49ff2250",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 322,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 92,
+          "ttftMs": 22,
+          "generationMs": 92,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 214
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "carry",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_412b2ec8-6570-4ebd-8853-8fce8ad0f40b",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 1052,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 97,
+          "ttftMs": 22,
+          "generationMs": 97,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 213
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-zero-product",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_2a581546-a48d-4106-9daf-7ea6d97bcf17",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 0,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 85,
+          "ttftMs": 25,
+          "generationMs": 84,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 221
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-borrow",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_0cdc58f8-36c5-4ef2-bb20-50723c851ad8",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 3,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 82,
+          "ttftMs": 21,
+          "generationMs": 81,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 218
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-negative-product",
+        "repeat": 0,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_bdb07ea8-926e-486c-a176-6ea7596c0506",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -221,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 96,
+          "ttftMs": 21,
+          "generationMs": 96,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 216
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "add-zero",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_bac52f08-5109-4c0e-a960-e895675c12f0",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 12,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 86,
+          "ttftMs": 21,
+          "generationMs": 86,
+          "outputTokens": 14,
+          "decodeTokensPerSecond": 217
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "negative",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_afd737a9-0a4c-4d6c-a777-5296ed30ff9b",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -11,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 91,
+          "ttftMs": 22,
+          "generationMs": 91,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 217
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "multiply",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_b00d23b8-0544-41fe-a935-548ca03198ac",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 322,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 97,
+          "ttftMs": 22,
+          "generationMs": 96,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 203
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "carry",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_97b657ac-8d6e-4015-b8c5-bddb2d85e2bc",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 1052,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 95,
+          "ttftMs": 21,
+          "generationMs": 95,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 218
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-zero-product",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_c8c6d2fe-4211-4753-b977-9387dccb08ec",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 0,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 84,
+          "ttftMs": 21,
+          "generationMs": 80,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 220
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-borrow",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_e14319fb-9558-4787-b6c1-968a5da63f1c",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 3,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 85,
+          "ttftMs": 22,
+          "generationMs": 82,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 218
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-negative-product",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_2c311054-c4ce-4b23-ba08-f8c7ffda59e1",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -221,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 112,
+          "ttftMs": 21,
+          "generationMs": 108,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 184
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "add-zero",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_30734ab2-3f26-4407-bc4a-bcc98ddd5b0a",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 12,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 86,
+          "ttftMs": 21,
+          "generationMs": 85,
+          "outputTokens": 14,
+          "decodeTokensPerSecond": 219
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "negative",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_4700983c-c992-46f0-838a-d5af55882b02",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -11,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 98,
+          "ttftMs": 22,
+          "generationMs": 97,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 199
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "multiply",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_930f5cf4-06e5-4ed2-bf21-0b6944e31305",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 322,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 90,
+          "ttftMs": 22,
+          "generationMs": 90,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 220
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "carry",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_42406442-767f-4ff7-93f3-485866ff2812",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 1052,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 98,
+          "ttftMs": 21,
+          "generationMs": 94,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 219
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-zero-product",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_8ce7e569-f45b-402d-a4f1-02271b56e0b0",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 0,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 85,
+          "ttftMs": 21,
+          "generationMs": 80,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 222
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-borrow",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_622c428a-271e-4cdf-97fe-4bd66b78ff7a",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 3,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 81,
+          "ttftMs": 21,
+          "generationMs": 80,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 220
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-negative-product",
+        "repeat": 2,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_1e14873b-4884-4e6e-870b-d86c43c0f80b",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -221,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 97,
+          "ttftMs": 21,
+          "generationMs": 96,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 213
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 
 Updated 2026-10-19. Reference: [analysis and acceptance criteria](REDESIGN_IMPLEMENTATION_ANALYSIS.md).
 
-The core local-first release (Phases 0–4) is implemented. The Phase 5 provider/download/benchmark infrastructure and Phase 6 mock-tested transport/consent/import infrastructure are also implemented. **Physical-device model qualification, live vendor-account validation and independent educational review remain gates; inference and all remote sharing stay disabled.** These are not reported as completed experiments.
+The core local-first release (Phases 0–4) is implemented. Phase 5 now has measured desktop model execution, cached startup and cancellation/recovery evidence from an isolated local pilot. Phase 6 transport/consent/import infrastructure is mock-tested. **Full device qualification, live vendor-account validation and independent educational review remain gates; public inference and all remote sharing stay disabled.**
 
 | Stage | Pushed commit | Delivery |
 | --- | --- | --- |
@@ -18,6 +18,7 @@ The core local-first release (Phases 0–4) is implemented. The Phase 5 provider
 | Restore evidence | `8773c88` | Strict checkpoint/response/score graph validation, coherent conflict merge |
 | Answer review/qualification | `8771003` | Corrected original ordering/biconditional puzzles; completion-date streaks; held-key and cross-tab browser regressions |
 | Concise interface | `9ca5677`, `202577f` | Shortened primary screens; explanations and technical details expand on demand; accessible disclosure targets and visible-feedback reload checks |
+| Desktop inference pilot | `76d099d`, `0d2b5da` | Isolated pilot builder, whole-preparation deadlines, worker teardown on cancellation, immutable artifact pins and runtime decode telemetry; actual desktop model reports |
 
 ## Delivered acceptance coverage
 
@@ -26,12 +27,12 @@ The core local-first release (Phases 0–4) is implemented. The Phase 5 provider
 - Phase 2: transactional migration/restore, complete committed memory snapshot, imported-content isolation, solver checks, stable options and exposed nearby-tier selection. Curriculum counts and editorial limitations are [published](CURRICULUM_COVERAGE.md).
 - Phase 3: attempt-level metrics with counts, actual retention interval, separate practice/partial credit, comparable slices, local diagnostics export, foreground/calendar reminders.
 - Phase 4: stub/provider contract, bounded cancellation/deadlines, golden and holdout repeats, failure fixtures, validated result cache, downloadable browser evaluation and regression fixture.
-- Phase 5 implementation: exact runtime/model/library pins, opt-in download/cache controls, dedicated worker, advisory resource probe, cancellation/device-loss handling and benchmark reports. **No actual model execution or device support is qualified.**
+- Phase 5 implementation: exact runtime/model/library pins, opt-in download/cache controls, dedicated worker, advisory resource probe, cancellation/device-loss handling and benchmark reports. Actual desktop execution and cached cancellation/recovery were measured; **no complete device profile is qualified**. See [desktop evidence](INTELLIGENCE_OPERATIONS.md#desktop-pilot-evidence).
 - Phase 6 implementation: allowlisted mock-first outbox, separate deployment/consent controls, preview, redaction, expiry/caps/backoff, cross-tab ownership/opt-out, public-key transport adapter and developer-only Langfuse import. **No vendor ingestion or retention setting has been activated or verified.**
 
 ## Qualification work that still needs external evidence
 
-1. Run the pinned model's cold/warm, repeated golden/holdout, offline-cache, cancellation/device-loss and sustained-use benchmarks on the physical iPhone/iPad, Android and desktop targets in the original matrix. Supply actual timing, memory, power and fallback evidence before enabling any profile. Emulated WebKit is not a physical iOS qualification.
+1. Extend the recorded desktop pilot with offline-cache, device-loss, sustained-use, memory/power and thermal measurements. Run the full matrix on physical iPhone/iPad and Android targets. Supply this evidence before enabling a profile. Emulated WebKit is not a physical iOS qualification.
 2. Review the authored curriculum with an independent educational/editorial reviewer; calibrate tiers and strengthen shallow/template-like distractors. The engineering answer review is complete; human pedagogical review and a ten-items-per-priority-skill/tier target are not claimed.
 3. If remote sharing is wanted, configure a public project key and vendor retention/quotas, inspect actual ingestion with a separately enabled development deployment, then review consent language. Keep Langfuse secrets on the developer machine. No production player-data upload is necessary to qualify core training.
 4. The 1,000-item expansion, rule-switch/N-back games, richer mastery scheduling and psychometric calibration are later roadmap work, not advertised features of this release.
