@@ -4,7 +4,7 @@ Evidence recorded 2026-10-19 (America/Los_Angeles). Live app: https://venkate5hg
 
 ## Automated checks
 
-- Local Node suite: **78/78 passed**, including persistence/migration, backup graph integrity, ownership, scoring/calendar policy, content solvers, inference validation/fallback, diagnostics privacy/outbox, isolated pilot builds and model preparation/cancellation/pin/timing regressions.
+- Local Node suite: **83/83 passed**, including persistence/migration, backup graph integrity, ownership, scoring/calendar policy, content solvers, inference validation/fallback, diagnostics privacy/outbox, isolated pilot builds and model preparation/cancellation/pin/timing regressions.
 - Offline dependency manifest and whitespace checks passed after the concise-copy changes.
 - CI rebuilds the pinned optional runtime and checks generated bundles against the committed artifacts, checks JavaScript syntax, runs the Node suite and exercises Chromium desktop plus mobile WebKit.
 - The browser suite contains **28 checks**. It covers all exercise types, a complete scored workout, feedback reload, exact-once responses, pause/exit, delayed study/recognition, backup download/restore, cross-tab ownership, held keys, installed-shell offline execution, disabled optional-runtime network access, fixture evaluations, accessibility and mobile reflow.
@@ -15,6 +15,10 @@ Evidence recorded 2026-10-19 (America/Los_Angeles). Live app: https://venkate5hg
 The first concise-copy browser run exposed assertion/race problems and a small disclosure target. Visible-text comparison now excludes collapsed explanations, memory recognition waits for the committed first question, and summaries have a minimum 44px touch height. Accessibility rules were retained.
 
 A subsequent run exposed a test race in the held-Enter regression: it sent Enter before the asynchronous Begin transition had focused the first answer. That test now waits for answer focus before exercising held-key behavior. This changes test synchronization without relaxing the held-key assertions.
+
+## Commit gate verification
+
+The installed pre-commit hook was tested in disposable Git repositories with actual commit rejection, partial staging, unstaged invalid model code, staged model additions/deletions and index preservation. A staged snapshot without fresh evidence was blocked. Smoke passed 3/3; full regression passed 21/21 plus 22 provider/gate tests. The current browser-model baseline passed 21/21 with zero fallbacks and p95 105 ms, bound to 42 source/runtime inputs. [Raw report](../evals/model-baseline.json), [screenshot](validation/model-commit-gate.png). The same pinned model/configuration serves all target surfaces; mobile hardware qualification remains pending.
 
 ## Live app checks
 

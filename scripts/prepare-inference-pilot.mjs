@@ -1,7 +1,8 @@
-import { cp, mkdtemp, readFile, writeFile, realpath } from 'node:fs/promises';
+import { cp, mkdtemp, readFile, writeFile, realpath, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { evaluationInputs } from './evaluation-inputs.mjs';
 import { generateManifest } from './build-offline-manifest.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -10,6 +11,12 @@ export async function prepareInferencePilot() {
   for (const name of ['js', 'data', 'css', 'assets', 'index.html', 'manifest.json', 'sw.js']) {
     await cp(path.join(root, name), path.join(destination, name), { recursive: true });
   }
+  const inputs = await evaluationInputs(root);
+  for (const name of inputs.files) {
+    await mkdir(path.dirname(path.join(destination, name)), { recursive: true });
+    await cp(path.join(root, name), path.join(destination, name));
+  }
+  await writeFile(path.join(destination, 'evaluation-inputs.json'), JSON.stringify(inputs, null, 2) + '\n');
   const flagsPath = path.join(destination, 'js/core/feature-flags.js');
   const flags = await readFile(flagsPath, 'utf8');
   if (!flags.includes('browserInference: false')) throw new Error('Expected disabled release inference flag.');

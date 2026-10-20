@@ -26,6 +26,8 @@ jobs:
           echo "All JS files pass syntax check"
       - name: Run unit tests
         run: npm test
+      - name: Enforce LLM evaluation quality and source evidence
+        run: npm run eval:full
       - name: Verify offline manifest
         run: npm run check:offline
       - name: Install test browsers

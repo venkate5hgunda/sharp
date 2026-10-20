@@ -20,6 +20,10 @@ The core local-first release (Phases 0–4) is implemented. Phase 5 now has meas
 | Concise interface | `9ca5677`, `202577f` | Shortened primary screens; explanations and technical details expand on demand; accessible disclosure targets and visible-feedback reload checks |
 | Desktop inference pilot | `76d099d`, `0d2b5da` | Isolated pilot builder, whole-preparation deadlines, worker teardown on cancellation, immutable artifact pins and runtime decode telemetry; actual desktop model reports |
 
+## Commit quality and one-model policy
+
+The staged-index pre-commit gate runs three smoke samples on every commit. Model/prompt/inference changes require all 21 regression cases, provider/failure tests and passing real-model evidence matching the source fingerprint. CI runs the full gate. One pinned SmolLM2 360M profile/configuration is enforced for desktop, mobile browsers and installed PWAs, admitted by capability checks. No mobile physical qualification is claimed. See [operations](INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate).
+
 ## Delivered acceptance coverage
 
 - Phase 0: cache dependency coverage/ownership, offline installed-shell execution, strict v1/v2 imports, flag-off silence.

@@ -1,3 +1,4 @@
+// One model for every browser/PWA surface. Eligibility depends on capabilities, never user agent.
 // Artifact pins are an evaluation candidate, not device qualification.
 export const MODEL_PROFILE = Object.freeze({
   id: 'smollm2-360m-eval', runtime: '@mlc-ai/web-llm@0.2.86', qualified: false,
@@ -12,6 +13,7 @@ export const MODEL_PROFILE = Object.freeze({
   license: 'Apache-2.0 (SmolLM2); verify upstream artifact notices before redistribution.'
 });
 export function modelAppConfig(profile = MODEL_PROFILE) {
+  if (profile !== MODEL_PROFILE) throw new Error('Only the shared model profile is supported.');
   return { model_list: [{ model_id: profile.modelId, model: profile.model, model_lib: profile.modelLib,
     required_features: [...profile.requiredFeatures], overrides: { context_window_size: profile.contextTokens } }] };
 }

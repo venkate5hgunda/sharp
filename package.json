@@ -12,7 +12,11 @@
     "start": "python3 -m http.server 8080",
     "test:browser": "playwright test",
     "build:inference": "node scripts/build-inference.mjs",
-    "prepare:inference-pilot": "node scripts/prepare-inference-pilot.mjs"
+    "prepare:inference-pilot": "node scripts/prepare-inference-pilot.mjs",
+    "hooks:install": "node scripts/install-hooks.mjs",
+    "eval:check": "node scripts/check-evals.mjs",
+    "eval:full": "node scripts/check-evals.mjs --full",
+    "eval:record": "node scripts/record-model-eval.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

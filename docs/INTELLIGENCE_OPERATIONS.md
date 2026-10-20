@@ -17,6 +17,38 @@ Only then does it cache/import the optional runtime and create a dedicated model
 
 Runtime references: [WebLLM basic usage](https://webllm.mlc.ai/docs/user/basic_usage.html), [workers/cache management](https://webllm.mlc.ai/docs/user/advanced_usage.html). The manifest in `js/intelligence/model-manifest.js` is the executable release contract. Upstream documentation alone does not qualify this pinned candidate. Preserve upstream notices before redistributing artifacts; weights are referenced remotely rather than committed.
 
+## One model across surfaces
+
+Use **SmolLM2 360M, q4f16_1**, with the same pinned weights, runtime, 1,024-token context, 128-token output limit and prompt on every target. There is no platform model picker, automatic upgrade, alternate download or cloud fallback. `modelAppConfig()` accepts only the shared profile.
+
+| Surface | Model | Admission |
+| --- | --- | --- |
+| Desktop browser | Shared SmolLM2 360M | Secure context, storage, worker, WebGPU/shader-f16 and buffer/device probes |
+| Android browser / installed PWA | Same artifacts and settings | Same capability checks; physical Android qualification pending |
+| iPhone/iPad browser / installed PWA | Same artifacts and settings | Same capability checks; physical iOS/iPadOS qualification pending |
+| Unsupported or resource-limited device | Curated exercises | No alternate LLM or remote inference |
+
+Browser/PWA packaging never selects a model by OS or user agent. [WebLLM requires a WebGPU-compatible browser](https://webllm.mlc.ai/docs/user/get_started.html); API availability alone is insufficient to promise this model works on every target device. Qualify the single model on each target surface before enabling public inference. If a target fails, fix the shared configuration or keep inference unavailable there; do not quietly introduce a second model. Training stays available everywhere the core PWA works.
+
+## Commit evaluation gate
+
+Install once per clone: `npm ci && npm run hooks:install`. The installer preserves existing custom hooks by refusing to replace them. Git does not automatically activate tracked hooks on a new clone.
+
+- Every commit: three deterministic smoke fixtures (zero addition, negative subtraction, multiplication), exact answers/schema, zero fallbacks; verify the saved real-model report remains valid and matches source.
+- Model, prompt, inference, dependency or gate changes: all seven golden/holdout fixtures, three repeats (21 results), plus provider/failure regression tests. A changed inference source fingerprint requires a new **actual browser-model** benchmark. Changes to a transitive model-view dependency also invalidate evidence, even if the path is outside the explicit trigger list.
+- Quality bar: 100% accepted, zero wrong/schema-invalid results, zero fallbacks; p95 at most 3 seconds, no task above 10 seconds. Model evidence must contain all 21 ordered fixtures, exact profile/prompt/validator identities and `source: model`. Stub and cached results cannot satisfy model evidence. Totals and percentiles are recomputed.
+
+The hook checks a temporary checkout of the **Git index**, including staged deletions; unstaged changes and unstaged evidence cannot make it pass. It leaves the index/worktree intact. Node and installed project dependencies are required. `npm run eval:check` checks the worktree; `npm run eval:full` forces full regression. CI runs the full gate on the checked-out commit. Git hooks can be bypassed with Git options; protected-branch checks must be configured separately if required.
+
+To refresh evidence after changing model inputs:
+
+1. `npm run prepare:inference-pilot`; serve the printed directory on localhost as described below.
+2. Open `/#/model`, prepare the model, run **Run full benchmark**, then download the report.
+3. `npm run eval:record -- /path/to/sharp-model-benchmark.json` validates the report and writes `evals/model-baseline.json`.
+4. Stage the report with the source changes and commit. If model inputs change again, rerun the benchmark.
+
+The pilot hashes the files it serves at benchmark time; the gate independently discovers transitive imports and hashes staged source, pinned runtime bundles, worker/probe entries, lockfile and evaluation policy. Only the isolated pilot's inference-enable flag is normalized. Old reports cannot be re-stamped by the recorder. Source freshness is content-based, not an expiry date: unrelated commits reuse evidence. This is local provenance and regression evidence, not signed attestation or proof of general language quality. Current fixtures cover only bounded arithmetic/JSON, and one desktop report does not qualify mobile hardware.
+
 ## Task contract and safe fallback
 
 Only `arithmetic-explanation` is registered. Its input is a bounded, independently recomputed integer operation; arbitrary player/imported text is rejected. The output is exact JSON with the correct numeric answer and one of two presentation styles. Text displayed from that result is composed deterministically. This deliberately narrow fixture task does not introduce generated scored questions into games.
@@ -31,9 +63,11 @@ Open Settings → Developer tools. Run Golden (four cases) and Holdout (three ca
 
 The same 21-case suite runs locally in Node tests. Browser tests verify the actual evaluation rendering and disabled download controls in Chromium and mobile WebKit. A stub report measures the harness, not model quality.
 
-Prepare an isolated pilot with `npm run prepare:inference-pilot`. It copies only static app assets into a new temporary directory, enables only browser inference there and regenerates the complete offline manifest. Release files, generated scored items and remote-sharing flags remain unchanged. Serve the printed directory with `python3 -m http.server 8085 --bind 127.0.0.1 --directory /path/printed/by/the/command`, then open `http://127.0.0.1:8085/#/model`. Download still requires the checkbox and button. Close pilot tabs and stop the server after testing. Do not deploy the pilot directory as the public app.
+Prepare an isolated pilot with `npm run prepare:inference-pilot`. It copies static app assets and the non-secret source inputs needed to fingerprint the benchmark into a new temporary directory, enables only browser inference there and regenerates the complete offline manifest. Release files, generated scored items and remote-sharing flags remain unchanged. Serve the printed directory with `python3 -m http.server 8085 --bind 127.0.0.1 --directory /path/printed/by/the/command`, then open `http://127.0.0.1:8085/#/model`. Download still requires the checkbox and button. Close pilot tabs and stop the server after testing. Do not deploy the pilot directory as the public app.
 
 Record device/OS/browser, exact profile pins, network conditions, cold preparation time and bytes, warm start, TTFT, generation p50/p95, accepted/fallback rates, cancellation, hidden-tab handling, cache removal, offline reuse, device loss, repeated/sustained execution, memory/power observations and thermal behavior. Run all 21 fixtures plus independently reviewed additions. Attach raw reports and declare each supported profile; do not extrapolate mobile support from desktop or emulation. No complete physical profile is qualified by this release.
+
+The current source-bound baseline is [`evals/model-baseline.json`](../evals/model-baseline.json): 21/21 actual model outputs accepted, zero fallbacks, preparation 394 ms, task p50/p95 91/105 ms, maximum 175 ms. It was captured on the same desktop below, with a fingerprint covering 42 source/runtime inputs. [Benchmark screenshot](validation/model-commit-gate.png).
 
 ## Desktop pilot evidence
 
