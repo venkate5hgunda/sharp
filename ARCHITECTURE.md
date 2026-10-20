@@ -1,135 +1,53 @@
-# Sharp Architecture and Data Engine Specification
+# Sharp architecture
 
-Last reviewed: 2026-10-18. This document is the **current-state reference** for Sharp's system architecture, offline persistence contract, question hydration pipeline, and dynamic difficulty adjustment engine.
+Reviewed: 2026-10-19. This describes the implemented static app; the original [analysis](docs/REDESIGN_IMPLEMENTATION_ANALYSIS.md) records the broader program and its acceptance gates.
 
----
+## Application and sessions
 
-## 1. System Overview
+`index.html → js/app.js → js/application.js` boots the repository before rendering Today, Exercises, Progress, Backup or Settings. Old workout/catalog/analytics hashes redirect to their new routes. Diagnostics and the guarded model benchmark are lazy route modules.
 
-Sharp is a static, zero-dependency, offline-first Progressive Web App (PWA) built with modern Vanilla HTML5, CSS3, and ES Modules:
+`js/session/controller.js` owns persistent state transitions. A session stores its complete ordered question/stimulus snapshots, option IDs, current round/position, phase and owner lease. Attempt IDs are derived from session, round and position; repeated answer and commit calls cannot apply twice. Explicit takeover invalidates the old owner. A page reload rotates ownership using the previous page ID without a 45-second wait.
 
-```text
-index.html -> js/app.js -> js/router.js -> js/views/workout-view.js
-                                 |          -> js/views/catalog-view.js
-                                 |          -> js/views/analytics-view.js
-                                 |          -> js/views/backup-view.js
-                                 |          -> js/views/settings-view.js
-                                 |
-                                 -> js/games/<game>.js
-                                           |
-                                           +-> data/questions-db.js <-> data/domains/*.js
-                                           |
-                                           +-> js/adaptive-engine.js
-                                           +-> js/analytics.js
-                                           +-> js/storage.js (localStorage + schema v1)
-                                           +-> js/audio.js (Web Audio synthesis)
-                                           +-> js/haptics.js (Navigator.vibrate)
-                                           +-> js/notifications.js (Push / Service Worker)
+`js/views/session-view.js` is shared by the circuit and individual exercises. Scoped timers/listeners stop on route exit. Quiz feedback persists until Next. Hidden/paused time is separate from monotonic active response time; reading has a separate phase. Interrupted visual exposure restarts the current unscored trial. Pattern scoring uses F1 partial credit; forward Corsi uses exact sequence accuracy. Practice cannot alter ratings/streaks. Untimed Corsi advances blocks manually.
 
-sw.js precaches app shell, styles, modules, assets, and question datasets for 100% offline capability.
-```
+Delayed memory commits an exact target/foil snapshot with a six-hour interval or three-minute practice interval. Readiness uses the stored wall-clock deadline. Recognition and exact-word free recall are separate modes; free recall makes subsequent recognition practice-only. Migrated sets without foils are also unrated. Actual delay is retained rather than relabelled as six-hour evidence.
 
----
+## Transactional persistence and migration
 
-## 2. Dynamic Difficulty Adjustment (DDA) & Rating Engine
+`js/persistence/repository.js` uses IndexedDB database `sharp-progress-v2`, schema version 1, with a `state` object store and one version-2 aggregate. The aggregate contains preferences, session checkpoints, attempts, committed rounds/workouts, memory, imported content, legacy archive, diagnostics/traces/outbox and optional validated-result cache.
 
-Sharp uses a psychometric Elo/CAT (Computerized Adaptive Testing) rating engine to continuously calibrate problem complexity to the player's cognitive state:
+All mutations read the latest aggregate inside one read/write transaction and acknowledge only `transaction.complete`. Synchronous mutators prevent a transaction escaping across awaits. Write failures abort without partial commits. BroadcastChannel refreshes other tabs and propagates sharing opt-out. Upgrade blocking/version changes show recovery guidance.
 
-1. **Cognitive Domains**:
-   - `memory`: Delayed recall retention, paired-associate memory, sequence consolidation.
-   - `math`: Speed arithmetic, order of operations, algebraic word problems, multi-variable logic.
-   - `logic`: Categorical syllogisms, conditional deduction, order ranking, Knights & Knaves.
-   - `comprehension`: Speed inference, necessary assumptions, author intent, paradox resolution.
-   - `focus`: Visual pattern memory, retroactive interference resistance, spatial Corsi span.
+The single aggregate is a deliberate correctness-first departure from the proposed normalized multi-store layout. It makes session, attempt and projection changes atomic, at the cost of cloning more data on each write. Large-history performance has not been qualified; normalization/indexing should precede very large histories. There is no silent volatile-storage fallback for training.
 
-2. **Rating Formula**:
-   $$\text{Expected} = \frac{1}{1 + 10^{\frac{R_{\text{challenge}} - R_{\text{user}}}{400}}}$$
-   $$\Delta = K \cdot (\text{Accuracy} - \text{Expected}) \cdot \text{SpeedBonus}$$
-   - Baseline rating starts at `1000`.
-   - Speed bonus awards up to $+30\%$ for response times substantially faster than expected latency, while gently dampening ratings on excessive latency.
+Before migration, a pending legacy restore journal is recovered. Migration copies every `sharp:*` raw value, computes an archive digest, validates known records, quarantines malformed keys and copies valid preferences, ratings, custom content and committed delayed memory. Existing IndexedDB state wins on retries. Legacy storage is retained until explicit reset. UTC legacy streak/history labels remain separate from new local-date evidence.
 
-3. **Difficulty Tiers**:
-   - **Tier 1 (800–949)**: Foundational
-   - **Tier 2 (950–1099)**: Novice
-   - **Tier 3 (1100–1249)**: Intermediate
-   - **Tier 4 (1250–1399)**: Proficient
-   - **Tier 5 (1400–1599)**: Advanced
-   - **Tier 6 (1600–1849)**: Expert
-   - **Tier 7+ (1850+)**: Master / Grandmaster
+## Backups and imports
 
----
+`js/persistence/backup-v2.js` exports schema 2 with SHA-256 over the document excluding its hash. This detects accidental corruption, not authenticity. V2 imports are capped at 20 MiB; legacy v1 retains its 5 MiB validator limit. Unsupported schemas, unsafe fields, invalid checkpoints, mismatched responses/scores, missing references and contradictory round evidence fail before a write.
 
-## 3. Question Dataset & Hydration Pipeline
+Replace and merge are one aggregate transaction. A conflict preference selects a whole session and its evidence graph, avoiding an older checkpoint combined with newer answers. Distinct sessions are unioned. Ratings and streaks are projections from the selected evidence and baseline, never maximum snapshots from two devices. Restore disables sharing, purges queued uploads and invalidates old ownership. Imported content is bounded, plain text, explicitly unrated, and cannot override built-in IDs.
 
-The question bank lives in `data/` and is unified via `data/questions-db.js`:
+## Content and projections
 
-```text
-data/domains/
-├── logic-puzzles.js          (Syllogisms, ordering, truth-tellers, conditionals)
-├── math-problems.js          (Word problems, inventory, relative speed, modular arithmetic)
-├── comprehension-passages.js (Scientific, ecological, historical, and cognitive texts)
-└── memory-clusters.js        (Themed morning study clusters + engineered distractor foils)
-```
+`js/session/content.js` normalizes 24 original questions plus 300 foundation questions into stable versioned items. Immutable content is separate from attempt evidence. Selection filters domain, skill and category, then favors balanced skill coverage, low exposure and nearby tiers. It records the actual item tier and selection reason. Stored seeded option order survives reload. Arithmetic, pattern and sequence generators accept reproducible seeds; committed snapshots survive later generator changes.
 
-### Continuous Hydration Lifecycle:
-- Every time a player answers a question, `recordQuestionAttempt(questionId, isCorrect, latencyMs)` updates the persistent metadata in `sharp:question_stats`:
-  - `timesServed`: Frequency counter (anti-repetition governor).
-  - `userAccuracy`: Historical correctness ratio.
-  - `averageLatencyMs`: Mean response time.
-  - `lastAttempted`: ISO timestamp.
-- Custom question packs can be imported via JSON with automatic schema validation and ID deduplication.
-- The entire hydrated dataset can be exported at any time via `downloadQuestionDatasetFile()`.
+`js/content/solvers.js` checks supported arithmetic, ordering, finite constraints, conditionals and truth-teller models independently. Reading questions use passage evidence and engineering review, not an automated claim of semantic proof. Two original logic errors were corrected with new content versions and solver regressions. [Coverage](docs/CURRICULUM_COVERAGE.md) discloses repetition and review limits.
 
----
+`js/session/metrics.js` replays a versioned Elo-like heuristic from the migrated rating baseline. Accuracy is total correct eligible binary responses divided by eligible responses. Pattern F1 stays separate. Overall daily snapshots average all five current domain ratings. Only completed non-practice circuits qualify a local completion-date streak. Comparable trends require 20 responses in the same game/skill/tier/content-version/input/timing slice; correct-time windows need five correct responses each. Legacy averages are not presented as attempt-level evidence.
 
-## 4. Offline Persistence & Backup Architecture
+## Offline shell and reminders
 
-All data is stored client-side in `localStorage` under the `sharp:` namespace:
+`scripts/build-offline-manifest.mjs` hashes the complete local app/data graph. `sw.js` installs that graph in a scope-owned shell cache and serves one snapshot without individual background revalidation. Updates wait for existing tabs to close. Cleanup removes only owned old shell caches and exact legacy Sharp caches. Other apps and model caches survive.
 
-| Key | Purpose |
-| :--- | :--- |
-| `sharp:schema_version` | Active data model schema integer (`CURRENT_SCHEMA_VERSION = 1`). |
-| `sharp:ratings` | Current Elo ratings across the 5 cognitive domains. |
-| `sharp:streaks` | Current streak count, personal best, last workout date, and daily calendar history. |
-| `sharp:delayed_memory` | Active Time-Capsule study set, commitment timestamp, scheduled recall time. |
-| `sharp:session_history` | Detailed historical round logs (up to 1,000 entries). |
-| `sharp:question_stats` | Question-level hydration metadata (attempts, accuracy, latency). |
-| `sharp:custom_questions` | User-imported or dynamically created question packs. |
-| `sharp:preferences` | Sound, haptics, theme, and notification reminder schedules. |
-| `sharp:backup_meta` | Date and timestamp of the latest backup snapshot. |
+The optional WebLLM client/worker bundles are excluded from this graph. They have a separate cache populated only after an explicit, deployment-enabled download choice. The vendor runtime owns weight/library caches. Cross-origin downloads never enter the app shell cache.
 
-### Single-File Backup Contract:
-- Exported filename: `sharp-backup-YYYY-MM-DD.json`.
-- Contains:
-  - `appName`: `"sharp"`
-  - `schemaVersion`: `1`
-  - `exportedAt`: ISO 8601 string
-  - `checksum`: legacy DJB2-style 32-bit checksum for accidental-corruption detection (not authentication)
-  - `data`: Complete dictionary of all `sharp:*` records
-- Imports are limited to 5 MiB and validate supported schema, record shapes, finite metrics, plain-text content, and any supplied checksum. Checksum-less legacy files show an explicit warning; mismatched checksums are rejected.
-- Restores write a rollback journal before changing progress. Failed writes roll back; interrupted restores recover on the next storage access. A full quota fails safely before replacement.
-- Import provides:
-  - **Replace**: Complete restore of previous state.
-  - **Merge**: Non-destructive union of session histories, preserving highest streaks and ratings.
+Foreground reminders use explicit preferences, readiness and per-day deduplication. Calendar export supplies local recurring events with alarms. No permission prompt or unreliable closed-app notification promise is part of startup.
 
----
+## Optional intelligence and observability
 
-## 5. Offline PWA & Notification Strategy
+All flags in `js/core/feature-flags.js` are false, immutable deployment choices. URL/localStorage values cannot enable them. `js/intelligence/service.js` uses a stub by default, exact arithmetic validators, versioned prompts, bounded deadlines/cancellation, validated caching, local traces and curated fallback. No generated answer reaches scored training.
 
-- **Service Worker (`sw.js`)**:
-  - Precaches all application shell assets, CSS, ES modules, icons, and dataset files.
-  - A generated, content-versioned manifest precaches the complete local application and datasets. Each worker serves one shell snapshot; updates wait for old tabs to close rather than revalidating individual modules mid-session.
-  - Cache cleanup is limited to obsolete shell caches for this scope and known legacy Sharp caches. Model caches and sibling applications are preserved.
-- **Web Notifications API**:
-  - Morning Drop Notification (`08:30`): Alerts player that daily items are ready to study.
-  - Evening Recall Notification (`19:30`): Reminds player to test retention from the morning session.
-  - Streak Protection Alert: Fires if daily workout is incomplete by evening.
-  - Non-intrusive in-app banner toasts serve as automatic fallbacks when system notifications are denied or on unsupported platforms.
+A pinned WebLLM provider, dedicated worker and explicit benchmark screen exist for a future physical-device pilot. Capability checks are advisory and release all probe resources. The runtime is absent from the disabled boot path. [Operations](docs/INTELLIGENCE_OPERATIONS.md) documents artifact sources, sizes, evaluation and activation gates.
 
-## 6. Reliability foundation contracts
-
-Every exercise renderer returns an idempotent cleanup function. `js/core/session-scope.js` owns game timers and listeners and guards callbacks after disposal. The router invokes cleanup before replacing a route; the workout view owns the current exercise cleanup. Result submission and completion callbacks are guarded against repeated execution within a mounted game. Persistent checkpoints and cross-tab transaction ownership are later work.
-
-Calendar keys for new records use the device local day through `js/core/calendar.js`. New streaks carry `local-v1`; existing streaks retain `utc-legacy` to preserve their labels and continuity until migration. Existing history is not retroactively assigned guessed local dates.
-
-`js/core/feature-flags.js` defines disabled inference and remote diagnostics defaults. No model runtime or diagnostics transport is loaded in this delivery. See [Phase 0 verification](docs/PHASE_0_VERIFICATION.md) for evidence and limits.
+The diagnostics broker records allowlisted bounded metadata locally. An optional consent-gated outbox has expiry, a cross-tab lease, retries with backoff/jitter and a 20-event daily attempt budget. Flag-off creates no transport. The manual PostHog mapping uses a public ingestion key only; no SDK autocapture, cookies, replay or persistent player identity. Raw prompt/output sharing is unimplemented and disabled. A developer-machine Langfuse importer defaults to a sanitized dry run; secret keys never enter the app.

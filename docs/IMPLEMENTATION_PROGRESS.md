@@ -1,34 +1,39 @@
 # Implementation progress
 
-Started: 2026-10-19. Reference: [implementation analysis](REDESIGN_IMPLEMENTATION_ANALYSIS.md).
+Updated 2026-10-19. Reference: [analysis and acceptance criteria](REDESIGN_IMPLEMENTATION_ANALYSIS.md).
 
-## Current delivery: reliability foundation (Phase 0)
+The core local-first release (Phases 0–4) is implemented. The Phase 5 provider/download/benchmark infrastructure and Phase 6 mock-tested transport/consent/import infrastructure are also implemented. **Physical-device model qualification, live vendor-account validation and independent educational review remain gates; inference and all remote sharing stay disabled.** These are not reported as completed experiments.
 
-| Stage | Scope | Status |
+| Stage | Pushed commit | Delivery |
 | --- | --- | --- |
-| Planning baseline | Commit the reviewed analysis and track delivery | Pushed (`afdcb4d`) |
-| Offline integrity | Complete precache dependency coverage, preserve unrelated caches, coherent updates | Pushed (`089f445`) |
-| Data integrity | Strict backup/import validation and safe failure handling | Pushed (`2bb83c4`) |
-| Lifecycle foundation | Scoped game resources, route cleanup, stable IDs, local calendar, disabled feature flags | Pushed (`e69b623`) |
+| Planning | `afdcb4d` | Full source analysis, contracts and phased plan |
+| Offline | `089f445` | Complete installed shell, cache ownership and coherent update boundary |
+| Legacy backup/import | `2bb83c4` | Strict validation, bounded imports, durable rollback journal |
+| Lifecycle foundation | `e69b623` | Scoped cleanup, identity, local calendar, disabled deployment flags |
+| Feedback UX | `151e0d8` | Explicit Next, persistent explanations and focus |
+| Transactional storage | `95832d3` | IndexedDB, raw legacy archive, quarantine and migration retry |
+| Shared app/session UX | `16b1535` | Navigation, onboarding, shared sessions, checkpoint/ownership, backup v2, progress and reminders |
+| Curriculum | `55641d7` | 300 new items, 30 total memory sets, independent solvers, filters and exposure selection |
+| Intelligence/diagnostics | `9681294` | Pinned optional runtime, stub/failure evaluation, validated fallback/cache, local traces, guarded sharing and transport |
+| Restore evidence | `8773c88` | Strict checkpoint/response/score graph validation, coherent conflict merge |
+| Answer review/qualification | `8771003` | Corrected original ordering/biconditional puzzles; completion-date streaks; held-key and cross-tab browser regressions |
+| Concise interface | `9ca5677`, `202577f` | Shortened primary screens; explanations and technical details expand on demand; accessible disclosure targets and visible-feedback reload checks |
 
-Each implementation stage is tested and committed separately, then pushed to `origin/main`. No model downloads or remote telemetry are enabled by this foundation release.
+## Delivered acceptance coverage
 
-## Current delivery: session UX (Phase 1)
+- Phase 0: cache dependency coverage/ownership, offline installed-shell execution, strict v1/v2 imports, flag-off silence.
+- Phase 1: all seven exercise entries use the shared persistent session experience or the delayed-memory study view; full circuit, pause/exit/reload, idempotent commits, explicit feedback, native dialog lifecycle, keyboard handling and mobile reflow.
+- Phase 2: transactional migration/restore, complete committed memory snapshot, imported-content isolation, solver checks, stable options and exposed nearby-tier selection. Curriculum counts and editorial limitations are [published](CURRICULUM_COVERAGE.md).
+- Phase 3: attempt-level metrics with counts, actual retention interval, separate practice/partial credit, comparable slices, local diagnostics export, foreground/calendar reminders.
+- Phase 4: stub/provider contract, bounded cancellation/deadlines, golden and holdout repeats, failure fixtures, validated result cache, downloadable browser evaluation and regression fixture.
+- Phase 5 implementation: exact runtime/model/library pins, opt-in download/cache controls, dedicated worker, advisory resource probe, cancellation/device-loss handling and benchmark reports. **No actual model execution or device support is qualified.**
+- Phase 6 implementation: allowlisted mock-first outbox, separate deployment/consent controls, preview, redaction, expiry/caps/backoff, cross-tab ownership/opt-out, public-key transport adapter and developer-only Langfuse import. **No vendor ingestion or retention setting has been activated or verified.**
 
-| Stage | Scope | Status |
-| --- | --- | --- |
-| Feedback and keyboard continuation | Explicit Next, persistent explanations, readable choices, question/result/route focus | Complete |
-| Workout recovery | Durable checkpoints, reload/resume, cross-tab ownership | Pending |
-| Navigation and dialogs | Today/Exercises/Progress routes, redirects, accessible dialogs | Pending |
+## Qualification work that still needs external evidence
 
-## Later phases
+1. Run the pinned model's cold/warm, repeated golden/holdout, offline-cache, cancellation/device-loss and sustained-use benchmarks on the physical iPhone/iPad, Android and desktop targets in the original matrix. Supply actual timing, memory, power and fallback evidence before enabling any profile. Emulated WebKit is not a physical iOS qualification.
+2. Review the authored curriculum with an independent educational/editorial reviewer; calibrate tiers and strengthen shallow/template-like distractors. The engineering answer review is complete; human pedagogical review and a ten-items-per-priority-skill/tier target are not claimed.
+3. If remote sharing is wanted, configure a public project key and vendor retention/quotas, inspect actual ingestion with a separately enabled development deployment, then review consent language. Keep Langfuse secrets on the developer machine. No production player-data upload is necessary to qualify core training.
+4. The 1,000-item expansion, rule-switch/N-back games, richer mastery scheduling and psychometric calibration are later roadmap work, not advertised features of this release.
 
-The UX/session redesign, IndexedDB migration, expanded curriculum, attempt-level analytics, full intelligence/evaluation infrastructure, measured inference pilot, and optional developer telemetry remain separate deliveries. Hardware compatibility is not certified until physical-device qualification.
-
-## Verification log
-
-- Planning baseline: existing Node suite passed 16/16; documentation links, JSON examples, and Markdown fences validated.
-- Offline integrity: 19/19 Node tests pass, including dependency coverage, cache ownership and offline snapshot behavior. Manifest freshness is enforced in CI. Desktop Chrome installed-shell smoke checks are recorded below; physical-device qualification remains pending.
-- Data integrity: 28/28 Node tests pass. Regression coverage includes checksum failures, unsupported schemas, invalid metrics and content, numeric-zero answers, atomic pack rejection, restore rollback after failed writes, full-quota preservation, and interrupted-restore recovery. Imported choices and memory text are escaped at render time.
-- Lifecycle foundation: 39/39 Node tests pass. All seven game entry points now return scoped cleanup. Desktop Chrome checks cover all game mounts, keyboard input, arithmetic completion, workout cancellation, and cached reload/content with the local server stopped. See [verification and limits](PHASE_0_VERIFICATION.md).
-- Feedback and keyboard continuation: 39/39 tests pass; desktop Chrome covers explicit continuation and complete quiz flows. See [behavior and browser verification](PHASE_1_FEEDBACK_VERIFICATION.md).
+[Release verification](IMPLEMENTATION_VERIFICATION.md) contains test results, CI/deployment links and live-app evidence. Earlier Phase 0/feedback documents are historical stage reports, not the current completion inventory.

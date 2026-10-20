@@ -1,95 +1,46 @@
-# Sharp ⚡
+# Sharp
 
-A progressive, offline-first Progressive Web App (PWA) for cognitive fitness training across **Memory**, **Logic**, **Math**, and **Comprehension**. 
+Sharp is a static, local-first cognitive practice app. [Open the live app](https://venkate5hgunda.github.io/sharp/).
 
-Built with zero external framework dependencies (pure modern HTML5, CSS3, ES Modules), Sharp features dynamic difficulty adjustment (DDA), Web Audio synthesis, local persistence, daily streak tracking, push notifications, and single-file backup with schema migrations.
+Today offers a saved four-exercise circuit: pattern memory, arithmetic, logic and reading. Exercises also includes story math, forward spatial Corsi and delayed memory. Every answer has explicit feedback and a Next action. Sessions resume after navigation or reload; a second tab must take ownership before changing a session.
 
----
+Practice mode is self-paced and excluded from ratings and streaks. Ratings are adaptive heuristics, not validated intelligence or medical assessments. The installed curriculum contains **324 questions and 30 memory sets**, plus seeded arithmetic and visual stimuli. See [coverage and answer review](docs/CURRICULUM_COVERAGE.md) for the inventory, provisional tiers and editorial limits.
 
-## Cognitive Domains & Exercises
+Progress stays in IndexedDB. Migration archives the original `sharp:*` localStorage bytes, preserves valid legacy progress and quarantines malformed records. Backup v2 exports active sessions, study snapshots and progress with SHA-256 corruption detection. Restore supports legacy v1 files, previews conflicts and commits atomically. Keep backups outside the browser: storage can be cleared or evicted.
 
-### 1. Memory: Time-Capsule Recall (Morning &amp; Evening Protocol)
-- **Morning Study Phase**: Presents $N$ items (curated words, mnemonic cues, 3-digit security codes, and associative pairs) calibrated to your memory rating.
-- **Natural Interference Delay**: Items consolidate in memory over 6–12 hours (with a flexible "3-Minute Fast-Track" mode for on-demand practice).
-- **Evening Retrieval Phase**: Tests recall through free retrieval and recognition challenges featuring engineered distractor foils (semantic siblings, phonetic distractors, and digit transpositions).
-- **Retention Curve Tracking**: Analyzes decay rate, precision, and latency over time.
+Offline training works after the service worker finishes installing. Updates wait for all existing Sharp tabs to close so an active session keeps one release. Reminders work while the app is open; Settings can export calendar reminders. There is no server push scheduler.
 
-### 2. Focus: Pattern Flash &amp; Interference
-- **Target Presentation**: Displays a sequence of distinct matrix patterns on $3\times3$, $4\times4$, or $5\times5$ grids.
-- **Interference Phase**: Rapidly flashes confusing, irrelevant distractor patterns to induce retroactive cognitive interference.
-- **Reconstruction Phase**: Prompts the player to recall and manually draw/reconstruct specific target patterns on an interactive tactile grid.
-- **Fidelity Scoring**: Computes exact cell overlap, true positives, and false alarms.
+Browser inference and all remote developer sharing are **disabled**. Startup does not download model weights or the optional model runtime. Local diagnostics includes synthetic golden/holdout evaluation, failure scenarios and JSON exports. The pinned WebLLM candidate and download controls are preparation for a separately qualified pilot. [Model hosting, downloads and operations](docs/INTELLIGENCE_OPERATIONS.md) explains the controls and remaining device/vendor gates.
 
-### 3. Math &amp; Quantitative Reasoning
-- **Mental Arithmetic Engine**: Rapid-fire adaptive arithmetic scaling from single-digit operations to multi-step BODMAS with negative numbers, fractions, and percentages.
-- **Story Math &amp; Comprehension**: Procedural real-world word problems ("Jack has $X$ apples, gave Jill $Y$, while Jill's brother doubled her share..."). Tests verbal translation into quantitative deduction.
+## Development
 
-### 4. Logic &amp; Analytical Reasoning
-- **Deductive Syllogisms**: Evaluates categorical premises (Universal &amp; Particular, Affirmative &amp; Negative), testing for valid conclusions while exposing common logical fallacies.
-- **Order &amp; Ranking Constraints**: Deduces exact chronological and relative positions under incomplete information.
-- **Knights &amp; Knaves**: Solves truth-teller and liar paradoxes using case analysis.
+The app uses native browser ES modules and vanilla HTML/CSS. No frontend framework or runtime build is needed to serve it.
 
-### 5. Verbal Comprehension &amp; Speed Inference
-- **Analytical Reading Passages**: Concise texts spanning marine biology, atmospheric physics, medieval cartography, and cognitive neuroscience.
-- **Critical Deductions**: Distinguishes guaranteed implications from extraneous claims, tests necessary assumptions, and identifies structural paradoxes.
-
-### 6. Working Memory: Spatial Corsi Span
-- **Block-Tapping Task**: Observes a sequence of illuminated blocks across a randomized matrix and repeats the exact sequence. Dynamically expands memory span from 3 to 9+ blocks.
-
----
-
-## Dynamic Difficulty Adjustment (DDA)
-
-Sharp keeps the brain in a continuous "flow state" using an adaptive rating engine:
-- Every domain has an independent skill rating (default `1000`).
-- Ratings adjust based on accuracy, challenge tier, and speed relative to benchmark response latencies.
-- Challenges automatically scale across **7 continuous tiers** (Foundational $\rightarrow$ Novice $\rightarrow$ Intermediate $\rightarrow$ Proficient $\rightarrow$ Advanced $\rightarrow$ Expert $\rightarrow$ Master).
-
----
-
-## Comprehensive Question Dataset &amp; Continuous Hydration
-
-Sharp includes an extensive curriculum in `data/`:
-- **Categorized Puzzles**: Logic syllogisms, math word problems, reading passages, and memory clusters with pedagogical step-by-step solutions and distractor rationales.
-- **Runtime Hydration**: As you solve puzzles, Sharp records attempt frequency, accuracy rates, and latency into the dataset metadata in `localStorage`.
-- **Import &amp; Export**: Export the fully hydrated question database as JSON, or import custom question packs with automatic validation and deduplication.
-
----
-
-## Privacy, Offline PWA &amp; Daily Backup
-
-- **100% Client-Side &amp; Private**: Zero telemetry, zero analytics tracking, zero cookies, zero external servers.
-- **Offline Service Worker**: Precaches all HTML, CSS, JavaScript modules, SVG icons, and questions. Works seamlessly on planes, subways, and offline mode.
-- **Single-File Backup**: Export your complete progress, ratings, and streaks into a single file (`sharp-backup-YYYY-MM-DD.json`) with checksum validation and schema migrations.
-- **Daily Routine Notifications**: Configurable Web Notifications for morning item drops (`08:30`), evening recall checks (`19:30`), and streak preservation alerts.
-
----
-
-## Local Development
-
-No build step or bundler is required. ES modules run natively in any modern browser:
-
-```bash
-cd sharp
-# Serve locally over HTTP
-python3 -m http.server 8080
-# Open http://localhost:8080
+```sh
+npm ci
+npm start
+# http://127.0.0.1:8080
 ```
 
-After changing app code, assets, or datasets, run `npm run build:offline` before committing. The generated offline manifest includes the complete local dependency graph and changes the shell cache version when its contents change. CI checks its freshness. Service worker updates wait until existing app tabs close; they do not replace individual modules during an active workout.
+After changing JS, CSS, datasets, assets or the worker, regenerate the offline manifest:
 
----
-
-## Automated Test Suite
-
-Sharp's core logic (DDA rating updates, math generators, dataset queries, schema validation, and checksum verification) is tested using Node's built-in test runner:
-
-```bash
+```sh
+npm run build:offline
+npm run check:offline
 npm test
 ```
 
----
+The optional SDK bundles are checked in, excluded from shell precaching and built reproducibly from exact dependency versions:
 
-## License
+```sh
+npm run build:inference
+```
 
-MIT License. Designed and crafted with precision.
+CI also runs Playwright and axe in Chromium and mobile WebKit. To run that suite on a development machine with installed Playwright browsers:
+
+```sh
+npx playwright install chromium webkit
+npm run test:browser
+```
+
+See [architecture](ARCHITECTURE.md), [implementation status](docs/IMPLEMENTATION_PROGRESS.md) and [release verification](docs/IMPLEMENTATION_VERIFICATION.md). Third-party bundled runtime notices remain in the generated files. Project code is MIT licensed.

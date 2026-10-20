@@ -1,13 +1,10 @@
-# Sharp implementation planning
+# Sharp documentation
 
-[Redesign implementation analysis and delivery plan](REDESIGN_IMPLEMENTATION_ANALYSIS.md)
+- [Implementation progress](IMPLEMENTATION_PROGRESS.md): pushed stages, delivered scope and remaining external qualification gates.
+- [Release verification](IMPLEMENTATION_VERIFICATION.md): version-bound unit/browser/deployment results and live-app evidence.
+- [Architecture](../ARCHITECTURE.md): current routes, sessions, persistence, backups, projections and optional infrastructure.
+- [Curriculum coverage](CURRICULUM_COVERAGE.md): 324 questions, 30 memory clusters, answer review and coverage gaps.
+- [Intelligence operations](INTELLIGENCE_OPERATIONS.md): model hosting/downloads, pinned runtime, evaluation, local diagnostics and guarded transport.
+- [Original implementation analysis](REDESIGN_IMPLEMENTATION_ANALYSIS.md): detailed source synthesis, design decisions and Phases 0–6. Prepared from the full Gemini conversation and baseline `b00082f` on 2026-10-19; this is the planning record, not a claim that hardware/editorial/vendor qualification has happened.
 
-Prepared on 2026-10-19 from the full shared Gemini conversation and Sharp commit `b00082f`.
-
-The analysis covers requirements, corrections to the research, verified repository gaps, UX and game improvements, persistence/content contracts, local analytics, browser intelligence, prompt evaluation, optional central diagnostics, notification constraints, phased delivery, and acceptance tests.
-
-This is a proposed future-state plan. Current implementation references remain in [ARCHITECTURE.md](../ARCHITECTURE.md), [README.md](../README.md), and [DESIGN_LANGUAGE.md](../DESIGN_LANGUAGE.md); discrepancies between those descriptions and the inspected code are called out in the analysis.
-
-- [Implementation progress](IMPLEMENTATION_PROGRESS.md): pushed stages and remaining work.
-- [Phase 0 verification](PHASE_0_VERIFICATION.md): delivered behavior, regression coverage, browser evidence and remaining gates.
-- [Feedback UX verification](PHASE_1_FEEDBACK_VERIFICATION.md): explicit continuation, keyboard focus and current Phase 1 scope.
+Historical stage evidence: [Phase 0](PHASE_0_VERIFICATION.md), [feedback UX](PHASE_1_FEEDBACK_VERIFICATION.md). Their pending lists describe those earlier stages; use the current progress and release verification documents for status.
