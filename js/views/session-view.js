@@ -58,6 +58,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
       const visual = ['pattern-flash', 'corsi-span'].includes(round.game);
       const example = round.game === 'pattern-flash' ? 'Remember the lit cells. Ignore the distractor. Extra selections reduce your score.'
         : round.game === 'corsi-span' ? 'Repeat the blocks in order. Example: A → C → B.'
+        : round.game === 'delayed-memory' ? 'Decide whether each word was in your study set.'
         : round.game.includes('math') ? 'Choose the answer. Example: 12 + 7 = 19.'
         : round.game === 'logic-deduction' ? 'Use only the given facts. All A are B; all B are C → all A are C.'
         : 'Read, then answer using the passage.';

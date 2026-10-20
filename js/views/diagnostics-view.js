@@ -11,7 +11,7 @@ import { FEATURES } from '../core/feature-flags.js';
 export function renderDiagnostics(container, repo, sharedBroker) {
   const scope = createSessionScope(), broker = sharedBroker || new DiagnosticsBroker(repo); let service, abort, lastReport;
   scope.addCleanup(() => { abort?.abort(); service?.dispose(); if (!sharedBroker) broker.dispose(); });
-  container.innerHTML = `<h1 class="view-title">Developer tools</h1><p>Local tests and diagnostics. Sharing is off.</p>
+  container.innerHTML = `<h1 class="view-title">Developer tools</h1><p>Local tests and diagnostics.</p>
     <div class="settings-card"><h2>Diagnostics</h2><p>Local metadata only. No answers or private text.</p>
     <button id="previewDiagnostics" class="btn btn-outline">Preview export</button><button id="exportDiagnostics" class="btn btn-primary">Download diagnostic JSON</button><pre id="diagnosticPreview" hidden></pre></div>
     <div class="settings-card"><h2>Sharing</h2><p>Remote telemetry: ${FEATURES.remoteDeveloperTelemetry ? 'available' : 'deployment disabled'}. Prompt payloads: ${FEATURES.remotePromptPayloads ? 'available' : 'deployment disabled'}. App diagnostics: ${FEATURES.remoteAppDiagnostics ? 'available' : 'deployment disabled'}.</p>
