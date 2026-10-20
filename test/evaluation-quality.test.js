@@ -3,17 +3,17 @@ import assert from 'node:assert/strict';
 import { IntelligenceService } from '../js/intelligence/service.js';
 import { runEvaluation } from '../js/intelligence/evaluation.js';
 import { MODEL_PROFILE, modelAppConfig } from '../js/intelligence/model-manifest.js';
-import { checkEvaluation, checkModelReport, FULL_DATASET, fingerprintInputs } from '../js/intelligence/evaluation-quality.js';
+import { checkEvaluation, checkModelReport, FULL_DATASET, SMOKE_DATASET, checkFreshModelRun, fingerprintInputs } from '../js/intelligence/evaluation-quality.js';
 import { needsFullEvaluation, evaluationInputs } from '../scripts/evaluation-inputs.mjs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
-async function fixtureReport() {
+async function fixtureReport({ dataset = FULL_DATASET, repeats = 3 } = {}) {
   const service = new IntelligenceService();
   try {
     await service.prepare();
-    const evaluation = await runEvaluation(service, { dataset: FULL_DATASET, repeats: 3 });
-    checkEvaluation(evaluation, { source: 'stub' });
+    const evaluation = await runEvaluation(service, { dataset, repeats });
+    checkEvaluation(evaluation, { source: 'stub', dataset, repeats });
     // Synthetic report used only for adversarial validator tests, never saved as model evidence.
     for (const result of evaluation.results) {
       result.source = 'model';
@@ -72,4 +72,20 @@ test('source fingerprint includes transitive runtime and validation dependencies
   assert.match(source, /profile !== MODEL_PROFILE/);
   assert.equal(modelAppConfig().model_list.length, 1);
   assert.throws(() => modelAppConfig({ ...MODEL_PROFILE }), /shared model/);
+});
+
+test('every commit needs a new real-model invocation; cached reports, stubs and wrong scope fail', async () => {
+  for (const full of [false, true]) {
+    const startedAt = Date.now();
+    const report = await fixtureReport({ dataset: full ? FULL_DATASET : SMOKE_DATASET, repeats: full ? 3 : 1 });
+    report.commitRun = { runId: 'current-invocation', mode: full ? 'full' : 'smoke' };
+    const options = { full, runId: 'current-invocation', startedAt, completedAt: Date.now() };
+    assert.equal(checkFreshModelRun(report, inputs, options).count, full ? 21 : 3);
+    assert.throws(() => checkFreshModelRun(report, inputs, { ...options, runId: 'next-commit' }), /new model run/);
+    assert.throws(() => checkFreshModelRun(report, inputs, { ...options, full: !full }), /scope/);
+    assert.throws(() => checkFreshModelRun(report, inputs, { ...options, startedAt: Date.now() + 1000 }), /outside/);
+    assert.throws(() => checkFreshModelRun(report, inputs, { ...options, completedAt: startedAt - 1000 }), /outside/);
+    report.evaluation.results[0].source = 'stub';
+    assert.throws(() => checkFreshModelRun(report, inputs, options), /wrong provider/);
+  }
 });

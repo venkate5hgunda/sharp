@@ -29,11 +29,20 @@ export function checkEvaluation(evaluation, { dataset = FULL_DATASET, repeats = 
   requireQuality(p95 <= QUALITY.maxP95Ms, `p95 exceeds ${QUALITY.maxP95Ms}ms`);
   return { count, p95Ms: p95 };
 }
-export function checkModelReport(report, inputs) {
+export function checkModelReport(report, inputs, evaluationOptions) {
   requireQuality(report?.version === 'sharp-model-benchmark-v3', 'record a fresh v3 browser report');
   requireQuality(report.inputFingerprint === inputs.fingerprint && canonicalJSON(report.inputFiles) === canonicalJSON(inputs.files), 'model evidence is stale; rerun the browser benchmark');
   requireQuality(canonicalJSON(report.profile) === canonicalJSON(MODEL_PROFILE), 'model profile changed');
-  return checkEvaluation(report.evaluation);
+  return checkEvaluation(report.evaluation, evaluationOptions);
+}
+
+export function checkFreshModelRun(report, inputs, { full, runId, startedAt, completedAt }) {
+  requireQuality(typeof runId === 'string' && runId.length > 0 && report?.commitRun?.runId === runId, 'a new model run is required for this commit');
+  requireQuality(report.commitRun.mode === (full ? 'full' : 'smoke'), 'incorrect live evaluation scope');
+  requireQuality(Number.isFinite(report.evaluation?.startedAt) && Number.isFinite(report.evaluation?.completedAt) &&
+    report.evaluation.startedAt >= startedAt && report.evaluation.completedAt >= report.evaluation.startedAt &&
+    report.evaluation.completedAt <= completedAt, 'model run is outside this invocation');
+  return checkModelReport(report, inputs, { dataset: full ? FULL_DATASET : SMOKE_DATASET, repeats: full ? QUALITY.repeats : 1 });
 }
 
 // The isolated pilot changes this one flag; evidence still binds to release source.

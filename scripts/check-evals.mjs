@@ -1,5 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { runModelEvaluations } from './run-model-evals.mjs';
 import { spawnSync } from 'node:child_process';
 import { evaluationInputs, needsFullEvaluation } from './evaluation-inputs.mjs';
 import { IntelligenceService } from '../js/intelligence/service.js';
@@ -20,14 +22,18 @@ try {
     checkEvaluation(evaluation, { dataset, repeats, source: 'stub' });
     console.log(`Eval ${full ? 'full regression' : 'smoke'}: ${evaluation.count}/${evaluation.count} deterministic samples passed.`);
   } finally { service.dispose(); }
-  // Check evidence integrity on every commit; a changed fingerprint requires a new actual-model run.
+  const regressionOnly = process.argv.includes('--regression-only');
+  if (regressionOnly && process.argv.includes('--real')) throw new Error('Cannot disable the real-model commit gate.');
+  const cacheDir = process.env.SHARP_EVAL_CACHE_DIR || path.join(root, '.cache/sharp-evals');
+  if (!regressionOnly) await runModelEvaluations({ full, inputs, cacheDir });
+  // CI checks committed full-suite evidence; the local hook additionally requires new inference above.
   const quality = checkModelReport(report, inputs);
-  console.log(`Model evidence: ${quality.count}/${quality.count} accepted; p95 ${quality.p95Ms}ms; source fingerprint matches.`);
+  console.log(`Committed model evidence: ${quality.count}/${quality.count} accepted; p95 ${quality.p95Ms}ms; source fingerprint matches.`);
   if (full) {
     const tests = spawnSync(process.execPath, ['--test', 'test/intelligence.test.js', 'test/webllm-provider.test.js', 'test/evaluation-quality.test.js', 'test/eval-hook.test.js'], { cwd: root, stdio: 'inherit' });
     if (tests.status !== 0) throw new Error('Full evaluation regression tests failed.');
   }
 } catch (error) {
-  console.error(`${error.message}\nTo refresh evidence: npm run prepare:inference-pilot; run the full browser benchmark; npm run eval:record -- /path/to/report.json; stage evals/model-baseline.json.`);
+  console.error(`${error.message}\nAfter a passing full model run, refresh committed evidence with npm run eval:record -- /path/to/latest-model-report.json; stage evals/model-baseline.json, then commit again.`);
   process.exitCode = 1;
 }

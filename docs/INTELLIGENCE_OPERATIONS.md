@@ -32,22 +32,29 @@ Browser/PWA packaging never selects a model by OS or user agent. [WebLLM require
 
 ## Commit evaluation gate
 
-Install once per clone: `npm ci && npm run hooks:install`. The installer preserves existing custom hooks by refusing to replace them. Git does not automatically activate tracked hooks on a new clone.
+Install once per clone: `npm ci`, `npx playwright install chromium`, then `npm run hooks:install`. The installer refuses to replace existing custom hooks. Git does not automatically activate tracked hooks on a new clone.
 
-- Every commit: three deterministic smoke fixtures (zero addition, negative subtraction, multiplication), exact answers/schema, zero fallbacks; verify the saved real-model report remains valid and matches source.
-- Model, prompt, inference, dependency or gate changes: all seven golden/holdout fixtures, three repeats (21 results), plus provider/failure regression tests. A changed inference source fingerprint requires a new **actual browser-model** benchmark. Changes to a transitive model-view dependency also invalidate evidence, even if the path is outside the explicit trigger list.
-- Quality bar: 100% accepted, zero wrong/schema-invalid results, zero fallbacks; p95 at most 3 seconds, no task above 10 seconds. Model evidence must contain all 21 ordered fixtures, exact profile/prompt/validator identities and `source: model`. Stub and cached results cannot satisfy model evidence. Totals and percentiles are recomputed.
+- **Every commit:** three new **real-model** smoke runs (zero addition, negative subtraction, multiplication), plus deterministic harness checks. Exact answers/schema and zero fallbacks are required. Cached reports and cached task results cannot replace inference.
+- **Model, prompt, inference, dependency or gate changes:** all seven golden/holdout fixtures repeated three times: **21 fresh real-model results**, plus provider/failure regressions. A changed source fingerprint also forces the full suite, including changes to transitive dependencies outside the explicit path list.
+- Quality bar: 100% accepted, zero wrong/schema-invalid results, zero fallbacks; p95 at most 3 seconds, no task above 10 seconds. Verify fixture order, coverage, profile/prompt/validator identity and `source: model`; independently recompute totals and percentiles.
 
-The hook checks a temporary checkout of the **Git index**, including staged deletions; unstaged changes and unstaged evidence cannot make it pass. It leaves the index/worktree intact. Node and installed project dependencies are required. `npm run eval:check` checks the worktree; `npm run eval:full` forces full regression. CI runs the full gate on the checked-out commit. Git hooks can be bypassed with Git options; protected-branch checks must be configured separately if required.
+The hook checks a temporary checkout of the **Git index**. Unstaged code and unstaged evidence cannot make it pass. Its Chromium profile is separate from personal browser data. A localhost-only server on port 8794 gives the isolated pilot a stable model-cache origin; model artifacts persist under ignored `.cache/sharp-evals/browser/`. It blocks concurrent use of that port, closes the browser/server after each run and removes the temporary pilot. No public app flags or remote sharing are enabled. Initial execution downloads the pinned model; later commits reuse downloaded artifacts, then execute inference again. Cancellation/preparation/task/overall deadlines remain bounded. No software GPU or stub is silently substituted if WebGPU fails.
 
-To refresh evidence after changing model inputs:
+Every invocation supplies a new random run ID and checks that the result matches it, the invocation time window, expected smoke/full scope and exact source fingerprint. The runner writes `.cache/sharp-evals/latest-model-report.json` for inspection. Missing Chromium, unavailable WebGPU, download failure, deadline expiry or a failed quality check blocks the commit; an earlier passing report cannot override a failed live run.
 
-1. `npm run prepare:inference-pilot`; serve the printed directory on localhost as described below.
-2. Open `/#/model`, prepare the model, run **Run full benchmark**, then download the report.
-3. `npm run eval:record -- /path/to/sharp-model-benchmark.json` validates the report and writes `evals/model-baseline.json`.
-4. Stage the report with the source changes and commit. If model inputs change again, rerun the benchmark.
+`npm run eval:check` runs the worktree's live smoke gate (full if source evidence is stale). `npm run eval:full` forces all 21 live cases. After a passing full run changes the source fingerprint, refresh the committed evidence:
 
-The pilot hashes the files it serves at benchmark time; the gate independently discovers transitive imports and hashes staged source, pinned runtime bundles, worker/probe entries, lockfile and evaluation policy. Only the isolated pilot's inference-enable flag is normalized. Old reports cannot be re-stamped by the recorder. Source freshness is content-based, not an expiry date: unrelated commits reuse evidence. This is local provenance and regression evidence, not signed attestation or proof of general language quality. Current fixtures cover only bounded arithmetic/JSON, and one desktop report does not qualify mobile hardware.
+```sh
+npm run eval:record -- .cache/sharp-evals/latest-model-report.json
+git add evals/model-baseline.json
+# Commit again; the hook executes another fresh model run.
+```
+
+The hook does not edit the index or auto-stage generated evidence. A stale committed baseline blocks after the live run and explains how to record/stage its new full report. The recorder rejects three-case reports as full-suite baselines. An interactive isolated pilot and downloaded full report can still be used with `eval:record`.
+
+Hosted CI has no qualified hardware GPU. It explicitly runs `npm run eval:regression`: all deterministic cases, provider/gate tests and source-matched committed full-model evidence, followed by browser/accessibility tests. CI does **not** claim live model execution. The pre-commit hook always requests live inference and has no environment switch to fall back to CI mode. Git's own hook bypass options remain possible; branch protection is separate.
+
+The gate independently discovers transitive imports and hashes staged source, pinned runtime bundles, worker/probe entries, lockfile and evaluation/runner policy. Only the isolated pilot's inference-enable flag is normalized. This is local regression evidence, not signed attestation or proof of general language quality. Current fixtures cover bounded arithmetic/JSON; a desktop run does not qualify mobile hardware.
 
 ## Task contract and safe fallback
 
@@ -67,7 +74,7 @@ Prepare an isolated pilot with `npm run prepare:inference-pilot`. It copies stat
 
 Record device/OS/browser, exact profile pins, network conditions, cold preparation time and bytes, warm start, TTFT, generation p50/p95, accepted/fallback rates, cancellation, hidden-tab handling, cache removal, offline reuse, device loss, repeated/sustained execution, memory/power observations and thermal behavior. Run all 21 fixtures plus independently reviewed additions. Attach raw reports and declare each supported profile; do not extrapolate mobile support from desktop or emulation. No complete physical profile is qualified by this release.
 
-The current source-bound baseline is [`evals/model-baseline.json`](../evals/model-baseline.json): 21/21 actual model outputs accepted, zero fallbacks, preparation 394 ms, task p50/p95 91/105 ms, maximum 175 ms. It was captured on the same desktop below, with a fingerprint covering 42 source/runtime inputs. [Benchmark screenshot](validation/model-commit-gate.png).
+The current source-bound baseline is [`evals/model-baseline.json`](../evals/model-baseline.json): an automated headless Chromium 156 full run on 2026-10-20 accepted 21/21 actual model outputs, zero fallbacks, preparation 10,069 ms with a new browser cache, task p50/p95 100/108 ms, maximum 1,838 ms. Its fingerprint covers 44 source/runtime inputs. A subsequent cached-artifact smoke accepted 3/3, zero fallbacks, p95 98 ms. The [earlier interactive benchmark screenshot](validation/model-commit-gate.png) predates this automated runner.
 
 ## Desktop pilot evidence
 

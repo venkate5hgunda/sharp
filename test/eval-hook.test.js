@@ -14,11 +14,11 @@ test('hook evaluates the index, preserves unstaged edits, and selects smoke/full
     git('init', '-q'); git('config', 'user.email', 'test@example.invalid'); git('config', 'user.name', 'Hook test');
     for (const dir of ['scripts', 'js/intelligence', '.githooks']) await mkdir(path.join(repo, dir), { recursive: true });
     for (const name of ['scripts/check-staged-evals.mjs', 'scripts/evaluation-inputs.mjs', '.githooks/pre-commit']) await cp(path.join(root, name), path.join(repo, name));
-    // The bootstrap's dependency lives in the worktree; its staged runner is the fixture below.
+    // The fixture records invocation scope without launching a browser in unit tests.
     await cp(path.join(root, 'js'), path.join(repo, 'js'), { recursive: true });
     await symlink(path.join(root, 'node_modules'), path.join(repo, 'node_modules'), 'dir');
     await writeFile(path.join(repo, '.gitignore'), 'node_modules\n');
-    await writeFile(path.join(repo, 'scripts/check-evals.mjs'), `import { readFileSync } from 'node:fs';\nconsole.log('MODE=' + Number(JSON.parse(process.env.SHARP_EVAL_CHANGED_FILES).some(name => name.startsWith('js/intelligence/'))));\nif (readFileSync('sample.txt', 'utf8') !== 'good') process.exitCode = 1;\n`);
+    await writeFile(path.join(repo, 'scripts/check-evals.mjs'), `import { readFileSync } from 'node:fs';\nif (!process.argv.includes('--real')) throw new Error('Hook must request real inference');\nif (!process.env.SHARP_EVAL_CACHE_DIR.endsWith('.cache/sharp-evals')) throw new Error('Cache must survive staged snapshots');\nconsole.log('MODE=' + Number(JSON.parse(process.env.SHARP_EVAL_CHANGED_FILES).some(name => name.startsWith('js/intelligence/'))));\nif (readFileSync('sample.txt', 'utf8') !== 'good') process.exitCode = 1;\n`);
     await writeFile(path.join(repo, 'sample.txt'), 'good'); git('add', '.'); git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'fixture');
     git('config', 'core.hooksPath', '.githooks');
     const hook = () => spawnSync('sh', ['.githooks/pre-commit'], { cwd: repo, encoding: 'utf8' });

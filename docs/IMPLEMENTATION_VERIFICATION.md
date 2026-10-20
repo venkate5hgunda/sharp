@@ -4,7 +4,7 @@ Evidence recorded 2026-10-19 (America/Los_Angeles). Live app: https://venkate5hg
 
 ## Automated checks
 
-- Local Node suite: **83/83 passed**, including persistence/migration, backup graph integrity, ownership, scoring/calendar policy, content solvers, inference validation/fallback, diagnostics privacy/outbox, isolated pilot builds and model preparation/cancellation/pin/timing regressions.
+- Local Node suite: **84/84 passed**, including persistence/migration, backup graph integrity, ownership, scoring/calendar policy, content solvers, inference validation/fallback, diagnostics privacy/outbox, isolated pilot builds and model preparation/cancellation/pin/timing regressions.
 - Offline dependency manifest and whitespace checks passed after the concise-copy changes.
 - CI rebuilds the pinned optional runtime and checks generated bundles against the committed artifacts, checks JavaScript syntax, runs the Node suite and exercises Chromium desktop plus mobile WebKit.
 - The browser suite contains **28 checks**. It covers all exercise types, a complete scored workout, feedback reload, exact-once responses, pause/exit, delayed study/recognition, backup download/restore, cross-tab ownership, held keys, installed-shell offline execution, disabled optional-runtime network access, fixture evaluations, accessibility and mobile reflow.
@@ -18,7 +18,11 @@ A subsequent run exposed a test race in the held-Enter regression: it sent Enter
 
 ## Commit gate verification
 
-The installed pre-commit hook was tested in disposable Git repositories with actual commit rejection, partial staging, unstaged invalid model code, staged model additions/deletions and index preservation. A staged snapshot without fresh evidence was blocked. Smoke passed 3/3; full regression passed 21/21 plus 22 provider/gate tests. The current browser-model baseline passed 21/21 with zero fallbacks and p95 105 ms, bound to 42 source/runtime inputs. [Raw report](../evals/model-baseline.json), [screenshot](validation/model-commit-gate.png). The same pinned model/configuration serves all target surfaces; mobile hardware qualification remains pending.
+The pre-commit hook now requires fresh real inference on every invocation: three smoke cases, or all 21 cases for model/prompt/inference changes. It evaluates the staged snapshot in isolated headless Chromium with cached model downloads, bypassing task-result caches. A fresh run ID, invocation time window, expected scope and exact source fingerprint prevent earlier reports or stub outputs from satisfying the live gate.
+
+Verified on 2026-10-20: an initial automated full run accepted **21/21**, zero fallbacks, p95 **108 ms**, preparation **10,069 ms** (new browser cache). A subsequent cached-artifact smoke accepted **3/3**, zero fallbacks, p95 **98 ms**. The full report is [committed](../evals/model-baseline.json), bound to 44 source/runtime inputs. Chromium 156.0.8078.4 ran headlessly on this desktop. Missing Chromium was observed to block the command; no saved-report fallback occurred. Installing the pinned browser enabled the actual run.
+
+Disposable Git tests verify real-mode invocation, partial staging, unstaged invalid model code, staged model additions/deletions, index preservation and commit rejection. Freshness tests reject a previous invocation ID, stale timestamps, wrong scope and stub sources. All **84 unit tests** and **23 focused regression tests** pass locally. Hosted CI explicitly runs deterministic regression plus committed source-matched model evidence; it does not claim a hosted GPU run. The shared model/configuration and pending mobile qualification are unchanged.
 
 ## Live app checks
 

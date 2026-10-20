@@ -25,7 +25,7 @@
     "provider": "webllm",
     "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0",
     "qualified": false,
-    "loadMs": 394,
+    "loadMs": 10069,
     "capability": {
       "version": 1,
       "secure": true,
@@ -38,7 +38,7 @@
       "reason": "advisory_probe_passed"
     }
   },
-  "inputFingerprint": "d9c8b499032c6a3aeac5fb7c8e2f5088f364941843efe914a1f29d8ac73ddfe4",
+  "inputFingerprint": "266b873fa65e63b3a3f8d2f553907ba9a6ee4d07acc1cb59cbbc5e576903f37b",
   "inputFiles": [
     "assets/optional-runtime/webllm-0.2.86-client.js",
     "assets/optional-runtime/webllm-0.2.86-worker.js",
@@ -81,19 +81,21 @@
     "scripts/check-evals.mjs",
     "scripts/evaluation-inputs.mjs",
     "scripts/inference-client-entry.js",
-    "scripts/inference-worker-entry.js"
+    "scripts/inference-worker-entry.js",
+    "scripts/prepare-inference-pilot.mjs",
+    "scripts/run-model-evals.mjs"
   ],
   "evaluation": {
     "version": "sharp-eval-v1",
-    "startedAt": 1792473619051,
-    "completedAt": 1792473621033,
+    "startedAt": 1792508464714,
+    "completedAt": 1792508468472,
     "cancelled": false,
     "count": 21,
     "accepted": 21,
     "fallbackCount": 0,
     "acceptedRate": 1,
-    "p50Ms": 91,
-    "p95Ms": 105,
+    "p50Ms": 100,
+    "p95Ms": 108,
     "qualification": "Fixture evaluation only; this does not certify physical devices.",
     "results": [
       {
@@ -101,7 +103,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_84dd643f-704a-45b0-9ab5-884b32726ac6",
+        "requestId": "request_04e1d7e9-d775-4803-bba9-ff57d1b9164e",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -110,11 +112,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 175,
-          "ttftMs": 98,
-          "generationMs": 174,
+          "totalMs": 1838,
+          "ttftMs": 1584,
+          "generationMs": 1838,
           "outputTokens": 14,
-          "decodeTokensPerSecond": 180.06
+          "decodeTokensPerSecond": 51.79
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -126,7 +128,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_ac837646-ba2a-44f5-89c1-0c6c201d16ec",
+        "requestId": "request_5b366847-914f-4ff7-b951-4a442c6055f8",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -135,11 +137,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 98,
+          "totalMs": 100,
           "ttftMs": 22,
-          "generationMs": 97,
+          "generationMs": 99,
           "outputTokens": 15,
-          "decodeTokensPerSecond": 191
+          "decodeTokensPerSecond": 185.92
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -151,7 +153,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_001fe85e-bdf6-41dd-9254-8bee29c8826b",
+        "requestId": "request_17ebdbe2-a9a7-4730-b2d7-2e80753db1cc",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -160,11 +162,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 93,
+          "totalMs": 100,
           "ttftMs": 22,
-          "generationMs": 92,
+          "generationMs": 99,
           "outputTokens": 15,
-          "decodeTokensPerSecond": 204.68
+          "decodeTokensPerSecond": 186.92
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -176,7 +178,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_8f5fa107-71cb-4890-ba7d-d7670a2b1e88",
+        "requestId": "request_fa9547ee-8e59-4c90-bcf0-96c15c3ffab2",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -185,11 +187,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 96,
-          "ttftMs": 22,
-          "generationMs": 95,
+          "totalMs": 105,
+          "ttftMs": 23,
+          "generationMs": 105,
           "outputTokens": 16,
-          "decodeTokensPerSecond": 210.97
+          "decodeTokensPerSecond": 188.21
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -201,7 +203,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_70fbdc12-e1a0-42c5-8abb-0de52a61aedb",
+        "requestId": "request_2baf052c-b4de-4556-ae86-182d961bf626",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -210,11 +212,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 80,
-          "ttftMs": 21,
-          "generationMs": 79,
+          "totalMs": 85,
+          "ttftMs": 22,
+          "generationMs": 84,
           "outputTokens": 13,
-          "decodeTokensPerSecond": 211.27
+          "decodeTokensPerSecond": 195.12
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -226,7 +228,7 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_75a28d13-5f85-47b5-8af2-9260769a517c",
+        "requestId": "request_97391af7-4e96-4567-8ba7-6d74ebc7f6c9",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -235,11 +237,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 80,
-          "ttftMs": 21,
-          "generationMs": 79,
+          "totalMs": 94,
+          "ttftMs": 22,
+          "generationMs": 94,
           "outputTokens": 13,
-          "decodeTokensPerSecond": 211.64
+          "decodeTokensPerSecond": 171.43
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -251,7 +253,182 @@
         "repeat": 0,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_c4db1386-d10b-42df-9db8-dc4a0ad0fab4",
+        "requestId": "request_a59db560-1895-430a-855d-e654cde00547",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -221,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 100,
+          "ttftMs": 21,
+          "generationMs": 100,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 194.3
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "add-zero",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_b1345eb2-d3f3-4573-8aba-e3f625eb78c3",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 12,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 93,
+          "ttftMs": 22,
+          "generationMs": 93,
+          "outputTokens": 14,
+          "decodeTokensPerSecond": 188.95
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "negative",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_ed05aa48-13db-4bee-883f-5775a637c456",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": -11,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 101,
+          "ttftMs": 22,
+          "generationMs": 101,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 182.53
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "multiply",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_2c168f12-1735-4b04-8bc3-ebc689421c64",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 322,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 94,
+          "ttftMs": 21,
+          "generationMs": 94,
+          "outputTokens": 15,
+          "decodeTokensPerSecond": 197.46
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "carry",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_e632236b-67c6-48b2-806e-c36370fb2cbf",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 1052,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 100,
+          "ttftMs": 21,
+          "generationMs": 100,
+          "outputTokens": 16,
+          "decodeTokensPerSecond": 195.31
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-zero-product",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_6dab52d8-9bdc-426d-9ec1-e9599c123450",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 0,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 84,
+          "ttftMs": 21,
+          "generationMs": 84,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 195.12
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-borrow",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_05038459-cbc2-4fdc-8589-77745689a920",
+        "status": "success",
+        "source": "model",
+        "reason": null,
+        "output": {
+          "answer": 3,
+          "style": "concise"
+        },
+        "timings": {
+          "totalMs": 85,
+          "ttftMs": 21,
+          "generationMs": 85,
+          "outputTokens": 13,
+          "decodeTokensPerSecond": 193.55
+        },
+        "taskId": "arithmetic-explanation",
+        "promptVersion": "1.0.0",
+        "validatorVersion": "exact-arithmetic-v1",
+        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
+      },
+      {
+        "fixtureId": "holdout-negative-product",
+        "repeat": 1,
+        "valid": true,
+        "acceptedProviderOutput": true,
+        "requestId": "request_e44d8871-26b0-4ba2-94cc-68c6317de31e",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -262,9 +439,9 @@
         "timings": {
           "totalMs": 105,
           "ttftMs": 22,
-          "generationMs": 104,
+          "generationMs": 105,
           "outputTokens": 16,
-          "decodeTokensPerSecond": 184.28
+          "decodeTokensPerSecond": 185.41
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -273,10 +450,10 @@
       },
       {
         "fixtureId": "add-zero",
-        "repeat": 1,
+        "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_9f884504-9977-4a40-8b2c-f3d29ba5e19e",
+        "requestId": "request_7080916f-5bd3-4ec7-a9ef-4c54afb1407c",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -285,11 +462,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 84,
-          "ttftMs": 21,
-          "generationMs": 83,
+          "totalMs": 108,
+          "ttftMs": 22,
+          "generationMs": 108,
           "outputTokens": 14,
-          "decodeTokensPerSecond": 213.46
+          "decodeTokensPerSecond": 153.48
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -298,10 +475,10 @@
       },
       {
         "fixtureId": "negative",
-        "repeat": 1,
+        "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_9e2898d7-c9f4-40c3-b740-918424228e40",
+        "requestId": "request_c606a483-6d4d-4260-bb59-a58be1cc6370",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -310,11 +487,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 89,
+          "totalMs": 91,
           "ttftMs": 21,
-          "generationMs": 87,
+          "generationMs": 91,
           "outputTokens": 15,
-          "decodeTokensPerSecond": 214.4
+          "decodeTokensPerSecond": 203.78
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -323,198 +500,23 @@
       },
       {
         "fixtureId": "multiply",
-        "repeat": 1,
+        "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_bdc2f192-8422-4c0a-a6d1-599796a29896",
+        "requestId": "request_6e356a77-eb88-4977-b345-99f6b5d9e719",
         "status": "success",
         "source": "model",
         "reason": null,
         "output": {
           "answer": 322,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 88,
-          "ttftMs": 21,
-          "generationMs": 87,
-          "outputTokens": 15,
-          "decodeTokensPerSecond": 215.05
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "carry",
-        "repeat": 1,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_5ac224c4-90f5-4230-abf6-585c16d50ec3",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": 1052,
           "style": "concise"
         },
         "timings": {
           "totalMs": 98,
-          "ttftMs": 21,
-          "generationMs": 97,
-          "outputTokens": 16,
-          "decodeTokensPerSecond": 201.07
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "holdout-zero-product",
-        "repeat": 1,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_9d75b24d-be20-4fe0-8944-20dcbd62d461",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": 0,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 80,
-          "ttftMs": 21,
-          "generationMs": 79,
-          "outputTokens": 13,
-          "decodeTokensPerSecond": 212.01
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "holdout-borrow",
-        "repeat": 1,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_9325fbc6-a1a9-4007-aedf-e054d741ce49",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": 3,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 79,
-          "ttftMs": 21,
-          "generationMs": 78,
-          "outputTokens": 13,
-          "decodeTokensPerSecond": 214.67
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "holdout-negative-product",
-        "repeat": 1,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_2d04bb43-282a-4bb4-8762-013d0d12925b",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": -221,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 94,
-          "ttftMs": 21,
-          "generationMs": 92,
-          "outputTokens": 16,
-          "decodeTokensPerSecond": 212.77
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "add-zero",
-        "repeat": 2,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_63a20f53-3665-4c7e-8f59-947c80eb47b2",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": 12,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 91,
-          "ttftMs": 21,
-          "generationMs": 90,
-          "outputTokens": 14,
-          "decodeTokensPerSecond": 190.9
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "negative",
-        "repeat": 2,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_6eefdadb-8fb9-4155-a2f0-3d9be6ca721d",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": -11,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 91,
-          "ttftMs": 23,
-          "generationMs": 89,
-          "outputTokens": 15,
-          "decodeTokensPerSecond": 215.38
-        },
-        "taskId": "arithmetic-explanation",
-        "promptVersion": "1.0.0",
-        "validatorVersion": "exact-arithmetic-v1",
-        "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
-      },
-      {
-        "fixtureId": "multiply",
-        "repeat": 2,
-        "valid": true,
-        "acceptedProviderOutput": true,
-        "requestId": "request_c37c980f-1892-4466-ae5b-3740d5618d59",
-        "status": "success",
-        "source": "model",
-        "reason": null,
-        "output": {
-          "answer": 322,
-          "style": "concise"
-        },
-        "timings": {
-          "totalMs": 90,
           "ttftMs": 22,
-          "generationMs": 89,
+          "generationMs": 98,
           "outputTokens": 15,
-          "decodeTokensPerSecond": 214.72
+          "decodeTokensPerSecond": 188.43
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -526,7 +528,7 @@
         "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_70b2e7cc-d47d-4e4b-9f03-69a058090adb",
+        "requestId": "request_97506dce-f7d1-43bc-988d-a29ae3c8e392",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -535,11 +537,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 94,
-          "ttftMs": 21,
-          "generationMs": 93,
+          "totalMs": 106,
+          "ttftMs": 22,
+          "generationMs": 106,
           "outputTokens": 16,
-          "decodeTokensPerSecond": 211.27
+          "decodeTokensPerSecond": 183.37
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -551,7 +553,7 @@
         "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_3db00cf5-7479-4024-933e-3e67be6af31d",
+        "requestId": "request_972f85b6-df8b-423a-8bf6-756149e6a856",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -560,11 +562,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 78,
-          "ttftMs": 21,
-          "generationMs": 77,
+          "totalMs": 89,
+          "ttftMs": 22,
+          "generationMs": 89,
           "outputTokens": 13,
-          "decodeTokensPerSecond": 216.22
+          "decodeTokensPerSecond": 182.09
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -576,7 +578,7 @@
         "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_dee84ae7-b158-4830-9571-40a3a031ce21",
+        "requestId": "request_51f79b52-c53f-4d6c-8c9c-bbbf56213ae9",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -585,11 +587,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 81,
-          "ttftMs": 21,
-          "generationMs": 79,
+          "totalMs": 84,
+          "ttftMs": 22,
+          "generationMs": 84,
           "outputTokens": 13,
-          "decodeTokensPerSecond": 209.79
+          "decodeTokensPerSecond": 197.37
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -601,7 +603,7 @@
         "repeat": 2,
         "valid": true,
         "acceptedProviderOutput": true,
-        "requestId": "request_b6a4b54e-587b-4815-bf4d-ef8ebc7dc445",
+        "requestId": "request_87c5118b-18bc-4aac-9442-5749812ae8a2",
         "status": "success",
         "source": "model",
         "reason": null,
@@ -610,11 +612,11 @@
           "style": "concise"
         },
         "timings": {
-          "totalMs": 103,
+          "totalMs": 100,
           "ttftMs": 22,
-          "generationMs": 101,
+          "generationMs": 100,
           "outputTokens": 16,
-          "decodeTokensPerSecond": 192.8
+          "decodeTokensPerSecond": 195.06
         },
         "taskId": "arithmetic-explanation",
         "promptVersion": "1.0.0",
@@ -622,5 +624,12 @@
         "artifact": "@mlc-ai/web-llm@0.2.86:3a622fd89e0216e8bb10c410c007c786baa8a033:00fe7a40e57e5e8eb9fef87526a4bf28ad5846c0"
       }
     ]
+  },
+  "commitRun": {
+    "runId": "1e0ec20c-e197-4264-9390-2bd8a102a748",
+    "mode": "full"
+  },
+  "environment": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36"
   }
 }

@@ -9,7 +9,7 @@ export async function evaluationInputs(root) {
     ...(await readdir(path.join(root, 'js/intelligence'))).filter((name) => name.endsWith('.js')).map((name) => `js/intelligence/${name}`),
     ...(await readdir(path.join(root, 'assets/optional-runtime'))).map((name) => `assets/optional-runtime/${name}`),
     'package.json', 'package-lock.json', 'scripts/inference-client-entry.js', 'scripts/inference-worker-entry.js',
-    'scripts/build-inference.mjs', 'scripts/evaluation-inputs.mjs', 'scripts/check-evals.mjs'
+    'scripts/run-model-evals.mjs', 'scripts/prepare-inference-pilot.mjs', 'scripts/build-inference.mjs', 'scripts/evaluation-inputs.mjs', 'scripts/check-evals.mjs'
   ])].sort();
   if (files.some((name) => name.startsWith('../') || path.isAbsolute(name))) throw new Error('Evaluation dependency outside repository.');
   return { version: 1, files, fingerprint: await fingerprintInputs(files, (name) => readFile(path.join(root, name))) };

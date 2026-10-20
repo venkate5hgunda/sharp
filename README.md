@@ -18,6 +18,7 @@ The app uses native browser ES modules and vanilla HTML/CSS. No frontend framewo
 
 ```sh
 npm ci
+npx playwright install chromium
 npm run hooks:install
 npm start
 # http://127.0.0.1:8080
@@ -37,7 +38,7 @@ The optional SDK bundles are checked in, excluded from shell precaching and buil
 npm run build:inference
 ```
 
-The commit hook runs three deterministic eval samples against the staged snapshot. Model/prompt/inference changes run the full 21-case regression and provider tests, and require passing real-model evidence for the exact source fingerprint. [Quality bar and evidence refresh](docs/INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate). CI enforces the same full gate.
+Every commit runs **three real-model samples** against the staged snapshot in isolated headless Chromium. Model/prompt/inference changes run **all 21 real-model cases** plus provider regressions. Model artifacts stay cached; inference runs again each time. A missing browser, unsupported WebGPU device or failed output blocks the commit. [Quality bar and evidence refresh](docs/INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate). Hosted CI runs deterministic regression and checks committed full-suite evidence; it does not claim a GPU model run.
 
 CI also runs Playwright and axe in Chromium and mobile WebKit. To run that suite on a development machine with installed Playwright browsers:
 

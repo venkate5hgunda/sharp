@@ -22,7 +22,7 @@ The core local-first release (Phases 0–4) is implemented. Phase 5 now has meas
 
 ## Commit quality and one-model policy
 
-The staged-index pre-commit gate runs three smoke samples on every commit. Model/prompt/inference changes require all 21 regression cases, provider/failure tests and passing real-model evidence matching the source fingerprint. CI runs the full gate. One pinned SmolLM2 360M profile/configuration is enforced for desktop, mobile browsers and installed PWAs, admitted by capability checks. No mobile physical qualification is claimed. See [operations](INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate).
+The staged-index pre-commit gate runs three fresh real-model samples on every commit. Model/prompt/inference changes require all 21 fresh real-model cases, provider/failure tests and source-matched full-suite evidence. Hosted CI explicitly runs deterministic regression and checks committed model evidence; it does not claim a live GPU run. One pinned SmolLM2 360M profile/configuration is enforced for desktop, mobile browsers and installed PWAs, admitted by capability checks. No mobile physical qualification is claimed. See [operations](INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate).
 
 ## Delivered acceptance coverage
 
