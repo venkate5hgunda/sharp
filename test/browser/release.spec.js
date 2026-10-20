@@ -56,6 +56,7 @@ test('delayed memory preserves committed study, gates readiness and completes fa
   await page.clock.install(); await page.goto('/#/games/delayed-memory'); await page.getByRole('button', { name: 'Study a new set' }).click();
   const words = await page.locator('.study-items strong').allTextContents(); expect(words.length).toBeGreaterThan(0);
   await page.getByLabel('Three-minute fast track', { exact: false }).check(); await page.getByRole('button', { name: 'Commit study set' }).click();
+  await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible(); await checkAccessibility(page);
   await page.clock.fastForward(181000); await page.getByRole('button', { name: 'Check readiness' }).click();
   await page.getByRole('button', { name: 'Begin recognition recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();

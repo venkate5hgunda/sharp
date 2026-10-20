@@ -54,3 +54,15 @@ test('skill trends compare like-for-like windows and withhold sparse or mixed-ti
   assert.ok(comparableSlices(attempts.map((a, i) => ({ ...a, tier: 1 + i % 2 }))).every((s) => !s.enough));
   assert.equal(comparableSlices(attempts.map((a) => ({ ...a, practice: true }))).length, 0);
 });
+test('restore rejects invented scores and resolves divergent checkpoints as whole session graphs', async () => {
+  const repo = await setup(), c = new SessionController(repo); const id = await c.start('logic-deduction'); await c.begin(id);
+  await c.answer(id, repo.snapshot().sessions[id].rounds[0].items[0].correctOptionId, { activeMs: 1000 });
+  const earlier = repo.snapshot(); await c.next(id);
+  await c.answer(id, repo.snapshot().sessions[id].rounds[0].items[1].correctOptionId, { activeMs: 1000 }); const later = repo.snapshot();
+  await restoreBackup(repo, earlier); await restoreBackup(repo, later, { mode: 'merge', conflicts: 'current' });
+  assert.equal(Object.keys(repo.snapshot().attempts).length, 1); assert.equal(repo.snapshot().sessions[id].rounds[0].position, 0);
+  await restoreBackup(repo, later, { mode: 'merge', conflicts: 'incoming' }); assert.equal(Object.keys(repo.snapshot().attempts).length, 2);
+  const tampered = repo.snapshot(); tampered.attempts[`${id}:0:0`].score = 0; assert.match(validateState(tampered), /score/);
+  const checkpoint = repo.snapshot(); checkpoint.sessions[id].rounds[0].position = 0; assert.match(validateState(checkpoint), /checkpoint/);
+  repo.close();
+});

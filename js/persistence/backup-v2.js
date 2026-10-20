@@ -37,18 +37,47 @@ export function validateState(state) {
       !['binary-v1', 'pattern-f1-v1'].includes(a.scoring) || !finite(a.activeMs) || !finite(a.hiddenMs) || !finite(a.readingMs) || !finite(a.timestamp) || !day(a.date)) return 'Invalid attempt evidence.';
   }
   for (const [id, r] of Object.entries(state.rounds)) if (!safeId(id) || r.id !== id || !state.sessions[r.sessionId] || !domains.includes(r.domain) || !Number.isInteger(r.count) || r.count < 1 || !finite(r.score, 0, r.count) || !finite(r.latencyMs) || !finite(r.expectedMs, 1) || !Number.isInteger(r.tier) || r.tier < 1 || r.tier > 7 || !finite(r.timestamp) || !day(r.date)) return 'Invalid committed round.';
+  for (const s of Object.values(state.sessions)) for (const [index, r] of s.rounds.entries()) {
+    const roundId = `${s.id}:${index}`, committed = state.rounds[roundId];
+    const expectedCount = r.phase === 'summary' ? r.items.length : r.position + (r.phase === 'feedback' ? 1 : 0);
+    if (r.attempts.length !== expectedCount || new Set(r.attempts).size !== r.attempts.length || (r.phase === 'summary') !== !!r.completed || r.completed !== !!committed && (r.completed || committed)) return 'Inconsistent round checkpoint.';
+    if (r.phase !== 'summary' && r.position >= r.items.length) return 'Invalid question position.';
+    for (const [position, attemptId] of r.attempts.entries()) {
+      const a = state.attempts[attemptId], q = r.items[position];
+      if (attemptId !== `${roundId}:${position}` || a.roundId !== roundId || a.sessionId !== s.id || a.itemId !== q.id || a.contentVersion !== q.version || a.domain !== r.domain || a.game !== r.game || a.tier !== q.tier || a.practice !== r.practice) return 'Inconsistent attempt reference.';
+      let score;
+      if (r.game === 'pattern-flash' || r.game === 'corsi-span') {
+        if (!Array.isArray(a.response) || a.response.some((n) => !Number.isInteger(n) || n < 0 || n >= q.size)) return 'Invalid visual response.';
+        if (r.game === 'pattern-flash') {
+          if (new Set(a.response).size !== a.response.length) return 'Invalid visual response.';
+          score = a.response.length ? 2 * a.response.filter((n) => q.sequence.includes(n)).length / (a.response.length + q.sequence.length) : 0;
+        } else score = a.response.length === q.sequence.length && a.response.every((n, i) => n === q.sequence[i]) ? 1 : 0;
+      } else {
+        if (!q.options.some((o) => o.id === a.response)) return 'Invalid stored response.';
+        score = a.response === q.correctOptionId ? 1 : 0;
+      }
+      if (a.score !== score) return 'Attempt score does not match its stored response.';
+    }
+    if (committed) {
+      const evidence = r.attempts.map((id) => state.attempts[id]).filter((a) => !a.interrupted);
+      if (committed.count !== evidence.length || committed.score !== evidence.reduce((n, a) => n + a.score, 0) || committed.game !== r.game || committed.domain !== r.domain || committed.practice !== r.practice) return 'Committed round disagrees with attempt evidence.';
+    }
+  }
+  if (Object.values(state.attempts).some((a) => !state.sessions[a.sessionId].rounds.some((r) => r.attempts.includes(a.id))) || Object.values(state.rounds).some((r) => !state.sessions[r.sessionId].rounds.some((_, i) => `${r.sessionId}:${i}` === r.id))) return 'Orphaned attempt or round.';
   for (const [id, w] of Object.entries(state.workouts)) if (!safeId(id) || !state.sessions[id] || !day(w.date) || !finite(w.timestamp) || w.completedAt !== null && !finite(w.completedAt)) return 'Invalid workout.';
-  if (state.memory && (!isRecord(state.memory) || !safeId(state.memory.id) || !['committed', 'completed'].includes(state.memory.status) || !Array.isArray(state.memory.items) || !state.memory.items.length || state.memory.items.length > 100 || state.memory.items.some((i) => typeof i.word !== 'string') || !finite(state.memory.readyAt) || !finite(state.memory.createdAt))) return 'Invalid memory snapshot.';
+  if (state.memory && (!isRecord(state.memory) || !safeId(state.memory.id) || !['committed', 'completed'].includes(state.memory.status) || !Array.isArray(state.memory.items) || !state.memory.items.length || state.memory.items.length > 100 || state.memory.items.some((i) => typeof i.word !== 'string') || state.memory.foils !== undefined && (!Array.isArray(state.memory.foils) || state.memory.foils.length > 100 || state.memory.foils.some((i) => typeof i.word !== 'string')) || !finite(state.memory.readyAt) || !finite(state.memory.createdAt))) return 'Invalid memory snapshot.';
   for (const [k, cap] of [['diagnostics', 500], ['traces', 100], ['outbox', 200]]) if (!Array.isArray(state[k]) || state[k].length > cap) return `Invalid ${k} buffer.`;
   if (state.preferences.theme !== undefined && !['auto', 'dark', 'light'].includes(state.preferences.theme)) return 'Invalid theme.';
-  for (const k of ['sound', 'haptics', 'notifications', 'onboarded', 'sharing', 'sharePayloads', 'shareErrors']) if (state.preferences[k] !== undefined && typeof state.preferences[k] !== 'boolean') return 'Invalid preference.';
+  for (const k of ['sound', 'haptics', 'notifications', 'onboarded', 'sharing', 'sharePayloads', 'shareErrors', 'foregroundReminders']) if (state.preferences[k] !== undefined && typeof state.preferences[k] !== 'boolean') return 'Invalid preference.';
   for (const k of ['morningTime', 'eveningTime']) if (state.preferences[k] !== undefined && !/^([01]\d|2[0-3]):[0-5]\d$/.test(state.preferences[k])) return 'Invalid reminder time.';
   return null;
 }
 export async function exportBackup(repo) {
   const data = await repo.refresh();
   const core = { appName: 'sharp', schemaVersion: 2, exportedAt: new Date().toISOString(), data };
-  return { ...core, sha256: await digest(core) };
+  const result = { ...core, sha256: await digest(core) };
+  if (new TextEncoder().encode(JSON.stringify(result)).length > MAX_BACKUP_BYTES) throw new Error('Progress exceeds the 20 MiB backup limit. Keep this browser data and contact the maintainer for an archival export.');
+  return result;
 }
 export async function readBackup(text) {
   if (new TextEncoder().encode(text).length > MAX_BACKUP_BYTES) throw new Error('Backup exceeds 20 MiB.');
@@ -82,7 +111,16 @@ export async function restoreBackup(repo, incoming, { mode = 'replace', conflict
     if (mode === 'merge') {
       const preferred = conflicts === 'incoming' ? incoming : current, other = conflicts === 'incoming' ? current : incoming;
       next = { ...structuredClone(other), ...structuredClone(preferred) };
-      for (const key of ['sessions', 'attempts', 'rounds', 'workouts']) next[key] = { ...other[key], ...preferred[key] };
+      next.sessions = { ...other.sessions, ...preferred.sessions };
+      // Resolve a conflicting session as one evidence graph, never an old checkpoint
+      // combined with the other backup's newer answers or completion records.
+      for (const key of ['attempts', 'rounds', 'workouts']) {
+        const owner = (id, value) => key === 'workouts' ? id : value.sessionId;
+        next[key] = Object.fromEntries([
+          ...Object.entries(other[key]).filter(([id, value]) => !preferred.sessions[owner(id, value)]),
+          ...Object.entries(preferred[key])
+        ]);
+      }
       const content = new Map(other.content.map((q) => [q.id, q])); preferred.content.forEach((q) => content.set(q.id, q)); next.content = [...content.values()];
     }
     // Invalidate every old tab's write ownership; restored sessions must be claimed again.
