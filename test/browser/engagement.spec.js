@@ -13,12 +13,34 @@ test('Pip opens, rotates encouragement, closes with Escape and stays usable on a
   await page.keyboard.press('Escape'); await expect(page.locator('#pipPanel')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Talk to Pip, your practice coach' })).toBeFocused();
 });
-test('reminders describe service availability and never request permission at startup', async ({ page }) => {
-  await page.addInitScript(() => { window.permissionRequests = 0; if ('Notification' in window) Notification.requestPermission = async () => { window.permissionRequests++; return 'denied'; }; });
-  await page.goto('/#/settings'); await expect(page.getByRole('button', { name: 'Enable background push' })).toBeDisabled();
+for (const permission of ['denied', 'granted']) test(`notification permission ${permission} is requested only after explicit opt-in`, async ({ page }) => {
+  await page.addInitScript((result) => {
+    window.permissionRequests = 0;
+    Object.defineProperty(window, 'Notification', { configurable: true, value: class {
+      static permission = 'default';
+      static async requestPermission() { window.permissionRequests++; this.permission = result; return result; }
+    } });
+    // Model API support explicitly, independent of the emulated browser's native API inventory.
+    if (!('serviceWorker' in navigator)) Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { register: async () => { throw new Error('Test worker registration unavailable'); } } });
+  }, permission);
+  await page.goto('/#/settings');
+  await expect(page.getByRole('button', { name: 'Enable background push' })).toBeDisabled();
   expect(await page.evaluate(() => window.permissionRequests)).toBe(0);
   await page.getByRole('button', { name: 'Enable playful browser alerts' }).click();
-  await expect(page.locator('#alertStatus')).toContainText('not enabled');
+  await expect(page.locator('#alertStatus')).toHaveText(permission === 'denied'
+    ? 'Alerts are not enabled. You can change this in browser settings.'
+    : 'Browser alerts enabled. Sharp must be open for scheduled checks.');
+  expect(await page.evaluate(() => window.permissionRequests)).toBe(1);
+  const preferences = await page.evaluate(async () => { const { initRepository } = await import('/js/persistence/repository.js'); return (await initRepository()).snapshot().preferences; });
+  expect(preferences.browserAlerts === true).toBe(permission === 'granted');
+});
+test('unsupported notifications offer calendar reminders without requesting permission', async ({ page }) => {
+  await page.addInitScript(() => { Reflect.deleteProperty(window, 'Notification'); });
+  await page.goto('/#/settings');
+  expect(await page.evaluate(() => 'Notification' in window)).toBe(false);
+  await page.getByRole('button', { name: 'Enable playful browser alerts' }).click();
+  await expect(page.locator('#alertStatus')).toHaveText('Browser alerts are unavailable. Try calendar reminders.');
+  await expect(page.getByRole('button', { name: 'Download calendar reminders' })).toBeEnabled();
 });
 test('reduced motion disables decorative animation', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/#/today'); await expect(page.locator('.planet')).toBeVisible();
