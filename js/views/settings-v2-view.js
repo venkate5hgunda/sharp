@@ -1,4 +1,4 @@
-import { enableBrowserAlerts, showBrowserReminder, subscribePush, pushAvailable, disableAlerts } from '../push.js';
+import { enableBrowserAlerts, showBrowserReminder, subscribePush, pushAvailable, disableAlerts, syncPushState } from '../push.js';
 import { createSessionScope } from '../core/session-scope.js';
 import { confirmAction } from '../core/dialog.js';
 import { reminderCalendar } from '../core/reminders.js';
@@ -16,7 +16,7 @@ export function renderSettings(container, repo) {
     <p><label><input id="hapticsPreference" type="checkbox" ${p.haptics !== false ? 'checked' : ''}> Haptics</label></p>
     <label for="themePreference">Theme</label><select id="themePreference">${['auto', 'light', 'dark'].map((t) => `<option value="${t}" ${t === (p.theme || 'auto') ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
     <div class="settings-card"><h2>Reminders</h2><p>In-app reminders work while Sharp is open. Use your calendar for alerts.</p>
-    <p><button id="enableAlerts" class="btn btn-outline">Enable playful browser alerts</button> <button id="previewAlert" class="btn btn-outline">Preview Pip’s reminder</button> <button id="disableAlerts" class="btn btn-outline">Turn browser alerts off</button></p><p id="alertStatus" role="status">Browser alerts: ${p.browserAlerts ? 'enabled' : 'off'}. Scheduled alerts require Sharp to be open. Calendar reminders work when it is closed.</p><button id="subscribePush" class="btn btn-outline" ${pushAvailable() ? '' : 'disabled'}>Enable background push</button><p>${pushAvailable() ? 'Subscribe to scheduled reminders from the configured push service.' : 'Background push service is not configured on this static installation.'}</p>
+    <p><button id="enableAlerts" class="btn btn-outline">Enable playful browser alerts</button> <button id="previewAlert" class="btn btn-outline">Preview Pip’s reminder</button> <button id="disableAlerts" class="btn btn-outline">Turn browser alerts off</button></p><p id="alertStatus" role="status">Browser alerts: ${p.browserAlerts ? 'enabled' : 'off'}. Scheduled alerts require Sharp to be open. Calendar reminders work when it is closed.</p><p><label for="pushTime">Daily push time (08:00–20:59)</label><input id="pushTime" type="time" min="08:00" max="20:59" value="${h(p.pushTime || '08:30')}"></p><button id="subscribePush" class="btn btn-outline" ${pushAvailable() ? '' : 'disabled'}>Enable background push</button><p>${pushAvailable() ? 'Opt in to at most one playful reminder per day, between 08:00 and 21:00 in your timezone. The service stores your push subscription, timezone, reminder time, completion date and recall-ready time; no answers or scores. Open-app system alerts are suppressed while background push is active.' : 'Background push service is not configured on this static installation.'}</p>
     <p><label><input id="foregroundReminders" type="checkbox" ${p.foregroundReminders ? 'checked' : ''}> In-app reminders</label></p>
     <p><label for="morningTime">Study time</label><input id="morningTime" type="time" value="${h(p.morningTime || '08:30')}"></p>
     <p><label for="eveningTime">Recall time</label><input id="eveningTime" type="time" value="${h(p.eveningTime || '19:30')}"></p>
@@ -36,10 +36,11 @@ export function renderSettings(container, repo) {
     ['disableAlerts', () => disableAlerts(repo), 'Browser alerts and background push are off.']
   ]) scope.listen(container.querySelector('#' + id), 'click', async () => { try { await action(); if (scope.active) alertStatus.textContent = message; } catch (e) { if (scope.active) alertStatus.textContent = e.message; } });
   const run = async (action) => { try { await action(); if (scope.active) status.textContent = 'Saved.'; } catch (e) { if (scope.active) status.textContent = e.message; } };
-  for (const [id, key] of [['soundPreference', 'sound'], ['hapticsPreference', 'haptics'], ['foregroundReminders', 'foregroundReminders'], ['morningTime', 'morningTime'], ['eveningTime', 'eveningTime'], ['themePreference', 'theme']]) {
+  for (const [id, key] of [['soundPreference', 'sound'], ['hapticsPreference', 'haptics'], ['foregroundReminders', 'foregroundReminders'], ['pushTime', 'pushTime'], ['morningTime', 'morningTime'], ['eveningTime', 'eveningTime'], ['themePreference', 'theme']]) {
     scope.listen(container.querySelector(`#${id}`), 'change', (event) => run(async () => {
       const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
       await repo.setPreferences({ [key]: value });
+      if(key==='pushTime')await syncPushState(repo);
       if (key === 'sound') audio.setEnabled(value); if (key === 'haptics') haptics.setEnabled(value); if (key === 'theme') setTheme(value);
     }));
   }
@@ -54,6 +55,7 @@ export function renderSettings(container, repo) {
   }));
   scope.listen(container.querySelector('#resetProgress'), 'click', () => run(async () => {
     if (!await confirmAction({ title: 'Reset local progress?', message: 'Delete all local progress? You’ll need a backup to restore it.', confirm: 'Reset progress', danger: true })) return;
+    if (repo.snapshot().preferences.pushManagementToken) await disableAlerts(repo);
     await repo.update(() => emptyState());
     const keys = []; for (let i = 0; i < localStorage.length; i++) if (localStorage.key(i)?.startsWith('sharp:')) keys.push(localStorage.key(i));
     keys.forEach((k) => localStorage.removeItem(k)); location.hash = '#/today'; location.reload();

@@ -24,7 +24,9 @@ for (const permission of ['denied', 'granted']) test(`notification permission ${
     if (!('serviceWorker' in navigator)) Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { register: async () => { throw new Error('Test worker registration unavailable'); } } });
   }, permission);
   await page.goto('/#/settings');
-  await expect(page.getByRole('button', { name: 'Enable background push' })).toBeDisabled();
+  const supported=await page.evaluate(()=>isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window);
+  const { PUSH_CONFIG }=await import('../../js/push.js');
+  expect(await page.getByRole('button', { name: 'Enable background push' }).isEnabled()).toBe(Boolean(supported&&PUSH_CONFIG.subscriptionEndpoint&&PUSH_CONFIG.applicationServerKey));
   expect(await page.evaluate(() => window.permissionRequests)).toBe(0);
   await page.getByRole('button', { name: 'Enable playful browser alerts' }).click();
   await expect(page.locator('#alertStatus')).toHaveText(permission === 'denied'
