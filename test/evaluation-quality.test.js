@@ -74,7 +74,7 @@ test('source fingerprint includes transitive runtime and validation dependencies
   assert.throws(() => modelAppConfig({ ...MODEL_PROFILE }), /shared model/);
 });
 
-test('every commit needs a new real-model invocation; cached reports, stubs and wrong scope fail', async () => {
+test('explicit hardware qualification needs fresh inference; cached reports, stubs and wrong scope fail', async () => {
   for (const full of [false, true]) {
     const startedAt = Date.now();
     const report = await fixtureReport({ dataset: full ? FULL_DATASET : SMOKE_DATASET, repeats: full ? 3 : 1 });

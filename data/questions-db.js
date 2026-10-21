@@ -1,3 +1,5 @@
+import { FOUNDATION_QUESTIONS } from './packs/foundation-v2.js';
+import { DISCOVERY_QUESTIONS } from './packs/discovery-v3.js';
 import { localDayKey } from '../js/core/calendar.js';
 // Central Question Dataset Engine & Hydration Layer for Sharp
 // Unifies Logic, Math, Comprehension, and Memory datasets with continuous metadata hydration
@@ -21,7 +23,7 @@ export function getAllQuestions() {
   const base = [
     ...LOGIC_PUZZLES,
     ...MATH_PROBLEMS,
-    ...COMPREHENSION_PASSAGES
+    ...COMPREHENSION_PASSAGES, ...FOUNDATION_QUESTIONS, ...DISCOVERY_QUESTIONS
   ];
 
   // Imported questions may append, but never replace curated built-in IDs.

@@ -1,3 +1,6 @@
+import { weeklyJourney } from './core/engagement.js';
+import { mountCoach } from './coach.js';
+import { showBrowserReminder } from './push.js';
 import { initRepository } from './persistence/repository.js';
 import { SessionController } from './session/controller.js';
 import { progressMetrics } from './session/metrics.js';
@@ -85,14 +88,16 @@ export async function boot() {
   }
   function today() {
     const scope = createSessionScope(), state = repo.snapshot(), m = progressMetrics(state), active = Object.values(state.sessions).filter((s) => s.status === 'active');
+    const journey = weeklyJourney(state);
     const todayDone = Object.values(state.workouts).some((w) => w.completedAt && (w.completedDate || w.date) === localDayKey() && !w.practice);
     container.innerHTML = `<div class="view-header"><div><h1 class="view-title">Today</h1><p class="view-desc">A few minutes. A sharper day.</p></div><div class="streak-pill">${m.currentStreak} day streak</div></div>
       ${!state.preferences.onboarded ? `<div class="workout-card"><h2>Welcome to Sharp</h2><p>Train a little each day. Progress stays on this device.</p><button id="finishWelcome" class="btn btn-primary">Let’s go</button></div>` : ''}
       ${state.migration?.quarantine.length ? `<p class="question-feedback">${state.migration.quarantine.length} older records need review. Originals are saved in your backup.</p>` : ''}
       ${active.length ? `<div class="workout-card"><h2>Pick up where you left off</h2><ul>${active.map((s) => `<li><a class="btn btn-outline" href="#/session/${h(s.id)}">Resume ${h(s.kind === 'workout' ? 'workout' : CATALOG.find((g) => g.id === s.kind)?.title || s.kind)} · exercise ${s.roundIndex + 1}</a></li>`).join('')}</ul></div>` : ''}
-      <div class="workout-card"><p class="workout-card-badge">${todayDone ? 'Today’s workout is complete' : 'Daily circuit'}</p><h2>Your daily workout</h2><p>Memory · Math · Logic · Reading</p><p>4 exercises · About 8 minutes · Autosaved</p>
+      <div class="workout-card expedition-hero"><div class="orbit-art" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="planet">✦</span><span class="satellite">✧</span></div><p class="eyebrow">TODAY’S EXPEDITION · ${h(journey.theme)}</p><p class="workout-card-badge">${todayDone ? 'Today’s workout is complete' : 'Daily circuit'}</p><h2>A little practice.<br>A new discovery.</h2><p>Your daily workout: memory, math, logic &amp; reading.</p><div class="skill-orbs" aria-hidden="true"><span>◈</span><span>＋</span><span>⌘</span><span>≋</span></div><p>4 exercises · About 8 minutes · Autosaved</p>
       <label><input id="practiceWorkout" type="checkbox"> Untimed practice · no ratings or streak</label><p><button id="startCircuit" class="btn btn-primary btn-large">${todayDone ? 'Start another workout' : 'Start workout'}</button></p></div>
-      <div class="workout-card"><h2>Time-capsule recall</h2><p>${state.memory?.status === 'committed' ? `Your study set ${Date.now() >= state.memory.readyAt ? 'is ready for recall.' : 'is saved for later.'}` : 'Study now. Recall later.'}</p><a class="btn btn-outline" href="#/games/delayed-memory">Open memory practice</a></div>`;
+      <section class="journey-card" aria-label="Weekly constellation"><div><p class="eyebrow">YOUR WEEKLY CONSTELLATION</p><h2>${journey.count >= 3 ? 'Your constellation is glowing ✦' : 'Small visits. Bright discoveries.'}</h2><p>${journey.count} of 3 weekly workouts · ${journey.count >= 3 ? 'Weekly explorer badge earned. Enjoy your progress!' : 'Complete three daily workouts this week to light your explorer badge.'} Miss a day? Just pick up here.</p></div><ol class="journey-days">${journey.days.map(d => `<li class="${d.done ? 'is-earned' : ''} ${d.today ? 'is-today' : ''}"><span aria-hidden="true">${d.done ? '✦' : '·'}</span><small>${d.label}</small><span class="sr-only">${d.done ? 'Completed' : 'Not completed'}${d.today ? ', today' : ''}</span></li>`).join('')}</ol><p class="journey-reward">${journey.count >= 3 ? '✺ Weekly explorer' : '✧ Explorer badge · 3 visits'}</p></section>
+      <div class="discovery-grid"><div class="workout-card memory-discovery"><span class="discovery-symbol" aria-hidden="true">◷</span><h2>Time-capsule recall</h2><p>${state.memory?.status === 'committed' ? `Your study set ${Date.now() >= state.memory.readyAt ? 'is ready for recall.' : 'is saved for later.'}` : 'Study now. Recall later.'}</p><a class="btn btn-outline" href="#/games/delayed-memory">Open memory practice</a></div><div class="workout-card"><span class="discovery-symbol" aria-hidden="true">↗</span><h2>Follow your curiosity</h2><p>Explore ${BASE_CONTENT.length} questions across everyday decisions, reasoning and reading. Or take an untimed round.</p><a class="btn btn-outline" href="#/exercises">Explore exercises</a><p><a href="#/settings">Make room for a playful reminder →</a></p></div></div>`;
     scope.listen(container.querySelector('#finishWelcome') || new EventTarget(), 'click', () => run(async () => { await repo.setPreferences({ onboarded: true }); if (scope.active) route(); }));
     scope.listen(container.querySelector('#startCircuit'), 'click', () => run(async () => { const button = container.querySelector('#startCircuit'); button.disabled = true;
       const practice = container.querySelector('#practiceWorkout').checked; const id = await controller.start('workout', { practice }); if (scope.active) navigate(`session/${id}`); }));
@@ -119,6 +124,7 @@ export async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) run(checkReminder); });
   async function checkReminder() {
     if (document.hidden) return; await repo.refresh(); const due = dueReminder(repo.snapshot()); if (!due) return;
+    await showBrowserReminder(repo.snapshot().preferences, due).catch(() => false);
     await repo.setPreferences({ lastReminder: due.id }); banner.innerHTML = `<p>${h(due.text)} <a href="#/${due.route}">Open memory practice</a> <button type="button" id="dismissReminder" class="btn btn-outline">Dismiss</button></p>`;
     banner.querySelector('#dismissReminder').onclick = () => { banner.textContent = ''; };
   }
@@ -127,5 +133,5 @@ export async function boot() {
     if (!navigator.serviceWorker.controller) navigator.serviceWorker.ready.then(() => showStatus('Ready offline. Keep a backup.'));
     registration.addEventListener('updatefound', () => { const worker = registration.installing; worker?.addEventListener('statechange', () => { if (worker.state === 'installed' && navigator.serviceWorker.controller) showStatus('Update ready. Close all Sharp tabs, then reopen.'); }); });
   }).catch(() => showStatus('Offline setup failed. Reopen while online to retry.'));
-  await route(); await checkReminder();
+  mountCoach(repo); await route(); await checkReminder();
 }

@@ -14,8 +14,8 @@ export function dueReminder(state, now = new Date()) {
   for (const [kind, time] of [['recall', p.eveningTime || '19:30'], ['study', p.morningTime || '08:30']]) {
     const [hour, min] = time.split(':').map(Number), id = `${date}:${kind}`;
     if (minute < hour * 60 + min || p.lastReminder === id) continue;
-    if (kind === 'recall' && state.memory?.status === 'committed' && state.memory.readyAt <= now.getTime()) return { id, text: 'Your memory study set is ready for recall.', route: 'games/delayed-memory' };
-    if (kind === 'study' && state.memory?.status !== 'committed') return { id, text: 'A new memory study set is available when you are ready.', route: 'games/delayed-memory' };
+    if (kind === 'recall' && state.memory?.status === 'committed' && state.memory.readyAt <= now.getTime()) return { id, text: 'Your time capsule is ready to open ✦ See which memories made the journey.', route: 'games/delayed-memory' };
+    if (kind === 'study' && state.memory?.status !== 'committed') return { id, text: 'Pip packed a tiny memory adventure. Plant a few words now; rediscover them later.', route: 'games/delayed-memory' };
   }
   return null;
 }

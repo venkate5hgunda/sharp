@@ -4,14 +4,17 @@ import { readFile, mkdir, rm, writeFile, rename } from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { prepareInferencePilot } from './prepare-inference-pilot.mjs';
+import { checkCoachEvaluation } from '../js/intelligence/coach-evaluation.js';
 import { checkFreshModelRun } from '../js/intelligence/evaluation-quality.js';
 
 const PORT = 8794; // Stable localhost origin preserves WebLLM's artifact cache across commits.
 const TYPES = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.wasm': 'application/wasm' };
-export async function runModelEvaluations({ full, inputs, cacheDir }) {
+export async function runModelEvaluations({ full, inputs, cacheDir, backend = 'auto' }) {
+  if (!['auto', 'gpu', 'cpu'].includes(backend)) throw new Error('Invalid inference backend');
+  if (backend === 'cpu') { const { runCPUEvaluations } = await import('./run-cpu-evals.mjs'); return runCPUEvaluations({ full, inputs, cacheDir }); }
   const runId = randomUUID(), startedAt = Date.now();
   const { destination } = await prepareInferencePilot();
-  let context, timer;
+  let context, timer, capability = null, cpuAttempted = false;
   const server = createServer(async (request, response) => {
     try {
       if (request.url === '/__sharp_eval__/') {
@@ -42,6 +45,17 @@ export async function runModelEvaluations({ full, inputs, cacheDir }) {
       if (message.text().startsWith('Sharp model:') && Date.now() - lastProgress >= 5000) { console.log(message.text()); lastProgress = Date.now(); }
     });
     await page.goto(`http://127.0.0.1:${PORT}/__sharp_eval__/`, { timeout: 10000 });
+    capability = await page.evaluate(async () => {
+      const { probeCapabilities } = await import('/js/core/capabilities.js');
+      return probeCapabilities();
+    });
+    await writeFile(path.join(cacheDir, 'latest-capability-report.json'), JSON.stringify({ runId, observedAt: Date.now(), capability }, null, 2) + '\n', { mode: 0o600 });
+    if (!capability.eligible) {
+      if (backend === 'gpu') throw new Error(`WebGPU admission failed: ${capability.reason}`);
+      await context.close(); context = null;
+      const { runCPUEvaluations } = await import('./run-cpu-evals.mjs');
+      cpuAttempted = true; return await runCPUEvaluations({ full, inputs, cacheDir, reason: capability.reason });
+    }
     const pending = page.evaluate(async ({ full, runId }) => {
       const [{ IntelligenceService }, { WebLLMProvider }, { MODEL_PROFILE }, { runEvaluation }, quality] = await Promise.all([
         import('/js/intelligence/service.js'), import('/js/intelligence/webllm-provider.js'), import('/js/intelligence/model-manifest.js'),
@@ -52,23 +66,33 @@ export async function runModelEvaluations({ full, inputs, cacheDir }) {
         const preparation = await service.prepare(MODEL_PROFILE, { consent: true, allowUnqualified: true,
           onProgress: (progress) => console.log(`Sharp model: ${progress.text || progress.phase}`) });
         const source = await quality.captureEvaluationInputs();
+        const { evaluateCoach } = await import('/js/intelligence/coach-evaluation.js');
+        const coachEvaluation = await evaluateCoach(service.provider, { full });
         const evaluation = await runEvaluation(service, { dataset: full ? quality.FULL_DATASET : quality.SMOKE_DATASET,
           repeats: full ? quality.QUALITY.repeats : 1 });
-        return { version: 'sharp-model-benchmark-v3', profile: MODEL_PROFILE, preparation, ...source, evaluation,
+        return { version: 'sharp-model-benchmark-v3', profile: MODEL_PROFILE, preparation, ...source, evaluation, coachEvaluation,
           commitRun: { runId, mode: full ? 'full' : 'smoke' }, environment: { userAgent: navigator.userAgent } };
       } finally { service.dispose(); }
     }, { full, runId });
     const report = await Promise.race([pending, new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('Real-model evaluation exceeded its total deadline.')), full ? 420000 : 240000);
+      timer = setTimeout(() => reject(new Error('Real-model evaluation exceeded its total deadline.')), full ? 1200000 : 300000);
     })]);
     // Save even failing output for diagnosis; only independently validated results can pass the hook.
     const latest = path.join(cacheDir, 'latest-model-report.json'), temporary = `${latest}.${runId}.tmp`;
     await writeFile(temporary, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 }); await rename(temporary, latest);
+    const coach = checkCoachEvaluation(report.coachEvaluation, { full });
+    if (report.coachEvaluation.startedAt < startedAt || report.coachEvaluation.completedAt > Date.now()) throw new Error('Coach run outside invocation');
+    console.log(`Coach model: ${coach.count}/${coach.count} accepted; p95 ${coach.p95Ms}ms.`);
     const result = checkFreshModelRun(report, inputs, { full, runId, startedAt, completedAt: Date.now() });
     console.log(`Real model: ${result.count}/${result.count} accepted, zero fallbacks; p95 ${result.p95Ms}ms. Report: ${latest}`);
     return report;
   } catch (error) {
-    throw new Error(`Real-model gate failed: ${error.message}\nInstall the test browser with: npx playwright install chromium. A working WebGPU device and model artifacts are required. No cached report can replace this run.`);
+    if (backend === 'auto' && /Executable doesn't exist|browserType.launchPersistentContext/.test(error.message) && capability === null) {
+      const { runCPUEvaluations } = await import('./run-cpu-evals.mjs'); return await runCPUEvaluations({ full, inputs, cacheDir, reason: 'gpu_browser_unavailable' });
+    }
+    await mkdir(cacheDir, { recursive: true, mode: 0o700 }).catch(() => {});
+    await writeFile(path.join(cacheDir, 'latest-failed-run.json'), JSON.stringify({ version: 'sharp-model-failed-run-v1', runId, startedAt, completedAt: Date.now(), inputFingerprint: inputs.fingerprint, inputFiles: inputs.files, mode: full ? 'full' : 'smoke', status: 'blocked', capability, reason: error.message, backend: cpuAttempted ? 'cpu' : 'gpu', realModelSamples: !cpuAttempted && capability && !capability.eligible ? 0 : null }, null, 2) + '\n', { mode: 0o600 }).catch(() => {});
+    throw new Error(`Real-model gate failed: ${error.message}\nInstall the test browser with: npx playwright install chromium. Auto mode uses real CPU inference when GPU admission is unavailable. Model failures are not replaced by fixtures. Inspect the backend-specific report.`);
   } finally {
     clearTimeout(timer);
     await context?.close().catch(() => {});

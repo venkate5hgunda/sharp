@@ -64,3 +64,14 @@ self.addEventListener('notificationclick', (event) => {
     return self.clients.openWindow?.(target.href);
   })());
 });
+
+// Push payloads select a local destination; never open a URL supplied by a remote sender.
+self.addEventListener('push', (event) => {
+  let payload = {}; try { payload = event.data?.json() || {}; } catch {}
+  const recall = payload.kind === 'recall';
+  event.waitUntil(self.registration.showNotification('Pip has a tiny quest for you ✦', {
+    body: recall ? 'Your time capsule is ready. Which memories made the journey?' : 'A little practice. A new discovery. Your daily expedition is ready.',
+    icon: new URL('assets/icons/icon-192.png', scope).href,
+    tag: 'sharp-daily', data: { url: recall ? 'index.html#/games/delayed-memory' : 'index.html#/today' }
+  }));
+});

@@ -5,6 +5,9 @@ export function permutations(values) {
 }
 export function solveProof(proof) {
   if (!proof || typeof proof !== 'object') throw new Error('Missing proof model.');
+  if (proof.type === 'fraction') return proof.total / proof.denominator * proof.numerator;
+  if (proof.type === 'duration') return proof.hours * 60 + proof.minutes;
+  if (proof.type === 'clock') { const end = proof.start + proof.duration + proof.pause; return `${String(Math.floor(end / 60)).padStart(2, '0')}:${String(end % 60).padStart(2, '0')}`; }
   if (proof.type === 'inventory') return proof.start - proof.given + proof.added;
   if (proof.type === 'rate') return proof.rate * proof.hours + proof.extra;
   if (proof.type === 'discount') return proof.price * (100 - proof.percent) / 100 - proof.coupon;

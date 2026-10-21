@@ -1,0 +1,11 @@
+# Push integration contract
+
+Sharp is currently a static PWA. Browser alerts can be requested explicitly in Settings and delivered by the open app's reminder checker. The worker can receive Web Push, but a worker cannot independently wake itself every morning. Calendar export is the available closed-app scheduling option.
+
+To enable background push, set `PUSH_CONFIG.subscriptionEndpoint` to a same-origin HTTPS API and `applicationServerKey` to the base64url public VAPID key in `js/push.js`. Never put the private VAPID key in the client. Deploy a service that accepts POST JSON containing `subscription` (PushSubscription JSON), `morningTime`, `eveningTime` and IANA `timezone`. Validate all fields, protect subscriptions as capability URLs, restrict origins, rate-limit requests and upsert by endpoint. Save these fields durably and send encrypted Web Push using a server-side library.
+
+The payload is `{ "kind": "study" }` or `{ "kind": "recall" }`. The worker intentionally chooses its own text and local destination. It ignores remote URLs and arbitrary remote copy. The server must cap frequency (recommended one reminder per day initially), implement quiet hours, handle DST, deduplicate sends and delete subscriptions on 404/410. Browser unsubscribe stops delivery; delete stale server records too. A static-only client cannot tell the server a workout is complete or recall is due: add a consented minimal status update contract before claiming those suppressions or personalized ready-state targeting.
+
+The client rolls back newly created subscriptions if registration fails. An existing subscription is retained on a failed update. The Settings opt-out unsubscribes at the browser and disables browser alerts. Updating reminder times currently updates local foreground/calendar settings only; background-service preference sync must be added when deploying the API. The API and scheduler have not been implemented or deployed in this change.
+
+Verify permission granted/denied/default, unsupported browsers, revoked permission, expired subscriptions, offline retry, scheduling across DST and deep links under `/sharp/`. On iOS, Web Push requires a compatible OS and installed home-screen web app. Keep calendar export visible as a fallback. Test from a real push sender before enabling the configuration in production.

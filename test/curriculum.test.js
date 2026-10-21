@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BASE_CONTENT, MEMORY_CONTENT, validateItem, selectQuestions, chooseCluster, shuffle } from '../js/session/content.js';
 import { verifyProof, solveProof } from '../js/content/solvers.js';
-test('all 324 scored items and 30 memory clusters meet structural and answer gates', () => {
-  assert.equal(BASE_CONTENT.length, 324); assert.equal(MEMORY_CONTENT.length, 30);
+test('all 864 scored items and 42 memory clusters meet structural and answer gates', () => {
+  assert.equal(BASE_CONTENT.length, 864); assert.equal(MEMORY_CONTENT.length, 42);
   assert.equal(new Set(BASE_CONTENT.map((q) => q.id)).size, BASE_CONTENT.length);
   for (const q of BASE_CONTENT) { assert.ok(validateItem(q), q.id); if (q.proof) assert.ok(verifyProof(q), q.id);
-    if (q.id.startsWith('foundation.reading')) assert.ok(q.passage.includes(q.evidence), q.id); }
+    if (q.domain === 'comprehension' && q.evidence) assert.ok(q.passage.includes(q.evidence), q.id); }
   for (const c of MEMORY_CONTENT) { assert.equal(new Set([...c.targetItems, ...c.distractorFoils].map((i) => i.word.toLowerCase())).size, c.targetItems.length + c.distractorFoils.length, c.id); }
 });
 test('selection filters skills/categories, excludes session IDs, rotates exposure and records nearby tiers', () => {
