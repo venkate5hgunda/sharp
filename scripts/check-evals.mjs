@@ -1,39 +1,39 @@
+import { evaluateCoach, checkCoachEvaluation, reviewedFixtureProvider } from '../js/intelligence/coach-evaluation.js';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { runModelEvaluations } from './run-model-evals.mjs';
-import { spawnSync } from 'node:child_process';
-import { evaluationInputs, needsFullEvaluation } from './evaluation-inputs.mjs';
+import { evaluationInputs } from './evaluation-inputs.mjs';
 import { IntelligenceService } from '../js/intelligence/service.js';
 import { runEvaluation } from '../js/intelligence/evaluation.js';
-import { checkEvaluation, checkModelReport, FULL_DATASET, SMOKE_DATASET, QUALITY } from '../js/intelligence/evaluation-quality.js';
+import { checkEvaluation, FULL_DATASET, QUALITY } from '../js/intelligence/evaluation-quality.js';
+import { checkReleasePolicy } from '../js/intelligence/release-policy.js';
+import { FEATURES } from '../js/core/feature-flags.js';
+import { MODEL_PROFILE } from '../js/intelligence/model-manifest.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 try {
-  const inputs = await evaluationInputs(root);
-  const report = JSON.parse(await readFile(new URL('../evals/model-baseline.json', import.meta.url), 'utf8').catch(() => 'null'));
-  const changed = JSON.parse(process.env.SHARP_EVAL_CHANGED_FILES || '[]');
-  const full = needsFullEvaluation(changed) || process.argv.includes('--full') || process.env.SHARP_EVAL_FULL === '1' || report?.inputFingerprint !== inputs.fingerprint;
+  const args = new Set(process.argv.slice(2));
+  for (const arg of args) if (!['--commit', '--regression-only', '--full', '--real', '--release'].includes(arg)) throw new Error(`Unknown evaluation option: ${arg}`);
+  if (args.has('--real') && (args.has('--commit') || args.has('--regression-only') || args.has('--release'))) throw new Error('Real-model qualification must run separately from commit/regression/release verification.');
+  const coachHarness = await evaluateCoach(reviewedFixtureProvider(), { source: 'fixture' });
+  console.log(`Coach deterministic harness: ${checkCoachEvaluation(coachHarness, { source: 'fixture' }).count} cases passed (not model evidence).`);
   const service = new IntelligenceService();
   try {
     await service.prepare();
-    const dataset = full ? FULL_DATASET : SMOKE_DATASET, repeats = full ? QUALITY.repeats : 1;
-    const evaluation = await runEvaluation(service, { dataset, repeats });
-    checkEvaluation(evaluation, { dataset, repeats, source: 'stub' });
-    console.log(`Eval ${full ? 'full regression' : 'smoke'}: ${evaluation.count}/${evaluation.count} deterministic samples passed.`);
+    const evaluation = await runEvaluation(service, { dataset: FULL_DATASET, repeats: QUALITY.repeats });
+    checkEvaluation(evaluation, { dataset: FULL_DATASET, repeats: QUALITY.repeats, source: 'stub' });
+    console.log(`Arithmetic deterministic harness: ${evaluation.count}/${evaluation.count} passed (not model evidence).`);
   } finally { service.dispose(); }
-  const regressionOnly = process.argv.includes('--regression-only');
-  if (regressionOnly && process.argv.includes('--real')) throw new Error('Cannot disable the real-model commit gate.');
-  const cacheDir = process.env.SHARP_EVAL_CACHE_DIR || path.join(root, '.cache/sharp-evals');
-  if (!regressionOnly) await runModelEvaluations({ full, inputs, cacheDir });
-  // CI checks committed full-suite evidence; the local hook additionally requires new inference above.
-  const quality = checkModelReport(report, inputs);
-  console.log(`Committed model evidence: ${quality.count}/${quality.count} accepted; p95 ${quality.p95Ms}ms; source fingerprint matches.`);
-  if (full) {
-    const tests = spawnSync(process.execPath, ['--test', 'test/intelligence.test.js', 'test/webllm-provider.test.js', 'test/evaluation-quality.test.js', 'test/eval-hook.test.js'], { cwd: root, stdio: 'inherit' });
-    if (tests.status !== 0) throw new Error('Full evaluation regression tests failed.');
+  if (args.has('--real')) {
+    // Only explicit qualification launches Chromium/downloads weights. No fallback on failure.
+    const { runModelEvaluations } = await import('./run-model-evals.mjs');
+    await runModelEvaluations({ full: true, inputs: await evaluationInputs(root), cacheDir: process.env.SHARP_EVAL_CACHE_DIR || path.join(root, '.cache/sharp-evals') });
+    console.log('Fresh full qualification completed. Record its report with eval:record; enablement remains a separate reviewed change.');
+  } else {
+    const evidenceRequired = FEATURES.browserInference || MODEL_PROFILE.qualified || args.has('--release');
+    const report = evidenceRequired ? JSON.parse(await readFile(path.join(root, 'evals/model-baseline.json'), 'utf8').catch(() => 'null')) : null;
+    const result = checkReleasePolicy({ inferenceEnabled: FEATURES.browserInference, qualified: MODEL_PROFILE.qualified,
+      report, inputs: evidenceRequired ? await evaluationInputs(root) : null, requireQualification: args.has('--release') });
+    console.log(result.evidenceRequired ? 'Release evidence: current full arithmetic and coach model reports verified.' : 'Development gate: inference disabled and profile unqualified; GPU qualification is separate (npm run eval:full).');
   }
-} catch (error) {
-  console.error(`${error.message}\nAfter a passing full model run, refresh committed evidence with npm run eval:record -- /path/to/latest-model-report.json; stage evals/model-baseline.json, then commit again.`);
-  process.exitCode = 1;
-}
+} catch (error) { console.error(error.message); process.exitCode = 1; }

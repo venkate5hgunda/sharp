@@ -32,29 +32,22 @@ Browser/PWA packaging never selects a model by OS or user agent. [WebLLM require
 
 ## Commit evaluation gate
 
-Install once per clone: `npm ci`, `npx playwright install chromium`, then `npm run hooks:install`. The installer refuses to replace existing custom hooks. Git does not automatically activate tracked hooks on a new clone.
+Ordinary development and hardware qualification are separate gates. A missing GPU must not block commits that keep public inference disabled and the profile unqualified.
 
-- **Every commit:** three new **real-model** smoke runs (zero addition, negative subtraction, multiplication), plus deterministic harness checks. Exact answers/schema and zero fallbacks are required. Cached reports and cached task results cannot replace inference.
-- **Model, prompt, inference, dependency or gate changes:** all seven golden/holdout fixtures repeated three times: **21 fresh real-model results**, plus provider/failure regressions. A changed source fingerprint also forces the full suite, including changes to transitive dependencies outside the explicit path list.
-- Quality bar: 100% accepted, zero wrong/schema-invalid results, zero fallbacks; p95 at most 3 seconds, no task above 10 seconds. Verify fixture order, coverage, profile/prompt/validator identity and `source: model`; independently recompute totals and percentiles.
+- **Every commit:** check a temporary checkout of the Git index, run all 21 arithmetic and 81 coach deterministic fixture cases, and run the staged unit suite. Unstaged changes cannot make a staged failure pass. No Chromium launch, GPU probe or model download occurs in this mode.
+- **Enabling public inference or setting `MODEL_PROFILE.qualified`:** the staged hook and CI require current full real-model arithmetic and coach evidence matching the source fingerprint, profile, prompt, validator, fixture coverage, timing and source identity. An enabled flag with an unqualified profile is rejected. Missing, stale or synthetic evidence blocks these commits even on a machine without a GPU.
+- **`npm run eval:full`:** explicit fresh hardware qualification, 21 arithmetic and 81 coach outputs. This fails when hardware is unsupported and never substitutes fixtures or historical reports. Its failure does not prevent disabled-feature development commits.
+- **`npm run eval:check` / `eval:regression`:** portable deterministic checks plus release-policy enforcement. **`eval:release`** additionally requires a qualified profile and full source-matched evidence. No environment variable disables release checks.
 
-The hook checks a temporary checkout of the **Git index**. Unstaged code and unstaged evidence cannot make it pass. Its Chromium profile is separate from personal browser data. A localhost-only server on port 8794 gives the isolated pilot a stable model-cache origin; model artifacts persist under ignored `.cache/sharp-evals/browser/`. It blocks concurrent use of that port, closes the browser/server after each run and removes the temporary pilot. No public app flags or remote sharing are enabled. Initial execution downloads the pinned model; later commits reuse downloaded artifacts, then execute inference again. Cancellation/preparation/task/overall deadlines remain bounded. No software GPU or stub is silently substituted if WebGPU fails.
+Install hooks with `npm run hooks:install`. The installer preserves custom hooks. The tracked hook checks staged code, then the staged unit suite; it never changes or auto-stages the index. Hosted CI runs unit, evaluation-policy, offline, browser and accessibility checks; it does not claim live model execution.
 
-Every invocation supplies a new random run ID and checks that the result matches it, the invocation time window, expected smoke/full scope and exact source fingerprint. The runner writes `.cache/sharp-evals/latest-model-report.json` for inspection. Missing Chromium, unavailable WebGPU, download failure, deadline expiry or a failed quality check blocks the commit; an earlier passing report cannot override a failed live run.
+On supported hardware, use `npm run eval:full`, inspect `.cache/sharp-evals/latest-model-report.json`, then record passing evidence with `npm run eval:record -- .cache/sharp-evals/latest-model-report.json`. The recorder requires full arithmetic and coach results; partial, wrong-source and stale reports fail. A passing live run is not required to have an already recorded baseline: recording is the next step, avoiding a circular dependency.
 
-`npm run eval:check` runs the worktree's live smoke gate (full if source evidence is stale). `npm run eval:full` forces all 21 live cases. After a passing full run changes the source fingerprint, refresh the committed evidence:
+The hardware runner uses a separate browser cache and localhost-only origin, bounded preparation/task deadlines and fresh invocation identifiers. Only explicit qualification creates a browser or downloads pinned artifacts. Source fingerprints cover transitive model/coach dependencies and gate policy. Physical surface, offline reuse and sustained resource qualification remain necessary before declaring support.
 
-```sh
-npm run eval:record -- .cache/sharp-evals/latest-model-report.json
-git add evals/model-baseline.json
-# Commit again; the hook executes another fresh model run.
-```
+## Coach qualification update (2026-10-21)
 
-The hook does not edit the index or auto-stage generated evidence. A stale committed baseline blocks after the live run and explains how to record/stage its new full report. The recorder rejects three-case reports as full-suite baselines. An interactive isolated pilot and downloaded full report can still be used with `eval:record`.
-
-Hosted CI has no qualified hardware GPU. It explicitly runs `npm run eval:regression`: all deterministic cases, provider/gate tests and source-matched committed full-model evidence, followed by browser/accessibility tests. CI does **not** claim live model execution. The pre-commit hook always requests live inference and has no environment switch to fall back to CI mode. Git's own hook bypass options remain possible; branch protection is separate.
-
-The gate independently discovers transitive imports and hashes staged source, pinned runtime bundles, worker/probe entries, lockfile and evaluation/runner policy. Only the isolated pilot's inference-enable flag is normalized. This is local regression evidence, not signed attestation or proof of general language quality. Current fixtures cover bounded arithmetic/JSON; a desktop run does not qualify mobile hardware.
+Explicit hardware qualification also requires 81 fresh contextual coach outputs. Portable commit checks use labelled fixtures. Prior arithmetic-only evidence is insufficient. The coach uses context-specific reviewed output allowlists and cannot bypass profile qualification. The current environment failed shader-f16 admission; public inference remains disabled. See [current qualification contract, evidence and reproduction](MODEL_QUALIFICATION.md). The arithmetic-only run totals elsewhere in this document describe the earlier baseline.
 
 ## Task contract and safe fallback
 

@@ -43,3 +43,7 @@ Choose skill/category in the exercise introduction. The selector filters first, 
 The installed minimum supports the shipped exercises; it does not meet ten reviewed items in every priority skill/tier cell. Reading and upper-tier logic are the largest coverage gaps. Counts alone should not justify a mastery claim. The next editorial work is stronger distractors, broader scenarios, independent review and measured tier calibration before the proposed 1,000-item expansion.
 
 Run `npm test` for structural, proof, uniqueness, seeded reproducibility, filtering and rotation checks. Export curriculum from Backup to inspect the exact installed normalized records. A valid imported schema is not semantic answer proof, so imported questions remain practice-only.
+
+## Discovery v3 expansion
+
+The installed total is now **864 questions and 42 memory sets**. Discovery v3 adds 420 math questions (140 each: fractions of quantities, unit conversion, time planning), 84 ordering questions, 36 reading questions from 12 fictional scenarios, and 12 themed memory sets. Math and ordering answers have executable independent proof checks; all new reading questions include passage evidence. These are authored templates with parameter variants, not 540 distinct scenario families. Difficulty tiers are provisional. The full inventory is checked by `test/curriculum.test.js`.

@@ -1,3 +1,4 @@
+import { DISCOVERY_QUESTIONS, DISCOVERY_MEMORY } from '../../data/packs/discovery-v3.js';
 import { LOGIC_PUZZLES } from '../../data/domains/logic-puzzles.js';
 import { MATH_PROBLEMS } from '../../data/domains/math-problems.js';
 import { COMPREHENSION_PASSAGES } from '../../data/domains/comprehension-passages.js';
@@ -29,12 +30,12 @@ export function normalizeQuestion(q, origin = 'curated') {
     validation: origin === 'curated' ? 'authored' : 'imported-unrated',
     evidence: q.evidence || '', proof: q.proof || null };
 }
-export const BASE_CONTENT = [...MATH_PROBLEMS, ...LOGIC_PUZZLES, ...COMPREHENSION_PASSAGES, ...FOUNDATION_QUESTIONS].map((q) => {
+export const BASE_CONTENT = [...MATH_PROBLEMS, ...LOGIC_PUZZLES, ...COMPREHENSION_PASSAGES, ...FOUNDATION_QUESTIONS, ...DISCOVERY_QUESTIONS].map((q) => {
   const item = normalizeQuestion(q);
   if (item.proof) { if (!verifyProof(item)) throw new Error(`Invalid curriculum proof: ${item.id}`); item.validation = 'solver-verified'; }
   return item;
 });
-export const MEMORY_CONTENT = [...MEMORY_CLUSTERS, ...FOUNDATION_MEMORY];
+export const MEMORY_CONTENT = [...MEMORY_CLUSTERS, ...FOUNDATION_MEMORY, ...DISCOVERY_MEMORY];
 export function validateItem(q) {
   if (!isSafeData(q) || q.schemaVersion !== 2 || typeof q.id !== 'string' || !/^[\w.-]{1,160}$/.test(q.id) ||
     ['__proto__', 'prototype', 'constructor'].includes(q.id) || !Number.isInteger(q.version) || q.version < 1 ||

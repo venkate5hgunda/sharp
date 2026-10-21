@@ -16,7 +16,8 @@ function worker() {
   const stores = new Map();
   const deleted = [];
   const requests = [];
-  const self = { registration: { scope }, addEventListener: (name, callback) => { handlers[name] = callback; } };
+  const notifications = [];
+  const self = { registration: { scope, showNotification: async (title, options) => { notifications.push({ title, options }); } }, addEventListener: (name, callback) => { handlers[name] = callback; } };
   vm.runInNewContext(script, {
     self, URL, Request,
     importScripts() { self.SHARP_OFFLINE = manifest; },
@@ -39,7 +40,7 @@ function worker() {
     handlers[name]({ waitUntil(value) { pending = value; } });
     await pending;
   }
-  return { handlers, stores, deleted, requests, lifecycle };
+  return { handlers, stores, deleted, requests, lifecycle, notifications };
 }
 
 test('offline snapshot includes the full app and dataset dependency graph', async () => {
@@ -79,4 +80,14 @@ test('offline fetch serves one installed snapshot without background revalidatio
   let intercepted = false;
   w.handlers.fetch({ request: new Request('https://models.example/weights'), respondWith() { intercepted = true; } });
   assert.equal(intercepted, false);
+});
+
+test('push chooses safe local recall destinations and handles malformed payloads', async () => {
+  const w = worker();
+  for (const data of [{ json: () => ({ kind: 'recall', url: 'https://untrusted.example', body: '<script>bad</script>' }) }, { json: () => { throw new Error('malformed'); } }]) {
+    let pending; w.handlers.push({ data, waitUntil(value) { pending = value; } }); await pending;
+  }
+  assert.equal(w.notifications[0].options.data.url, 'index.html#/games/delayed-memory');
+  assert.equal(w.notifications[1].options.data.url, 'index.html#/today');
+  assert.ok(w.notifications.every(n => !n.options.body.includes('<script>') && n.options.tag === 'sharp-daily'));
 });

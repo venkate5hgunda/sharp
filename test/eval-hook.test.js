@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = fileURLToPath(new URL('../', import.meta.url));
 
-test('hook evaluates the index, preserves unstaged edits, and selects smoke/full on staged paths', async () => {
+test('hook evaluates the index, preserves unstaged edits, and runs portable checks on staged code without requesting a GPU', async () => {
   const repo = await mkdtemp(path.join(tmpdir(), 'sharp-hook-test-'));
   const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' });
   try {
@@ -18,7 +18,7 @@ test('hook evaluates the index, preserves unstaged edits, and selects smoke/full
     await cp(path.join(root, 'js'), path.join(repo, 'js'), { recursive: true });
     await symlink(path.join(root, 'node_modules'), path.join(repo, 'node_modules'), 'dir');
     await writeFile(path.join(repo, '.gitignore'), 'node_modules\n');
-    await writeFile(path.join(repo, 'scripts/check-evals.mjs'), `import { readFileSync } from 'node:fs';\nif (!process.argv.includes('--real')) throw new Error('Hook must request real inference');\nif (!process.env.SHARP_EVAL_CACHE_DIR.endsWith('.cache/sharp-evals')) throw new Error('Cache must survive staged snapshots');\nconsole.log('MODE=' + Number(JSON.parse(process.env.SHARP_EVAL_CHANGED_FILES).some(name => name.startsWith('js/intelligence/'))));\nif (readFileSync('sample.txt', 'utf8') !== 'good') process.exitCode = 1;\n`);
+    await writeFile(path.join(repo, 'scripts/check-evals.mjs'), `import { readFileSync } from 'node:fs';\nif (!process.argv.includes('--commit') || process.argv.includes('--real')) throw new Error('Hook must request portable commit checks');\nif (!process.env.SHARP_EVAL_CACHE_DIR.endsWith('.cache/sharp-evals')) throw new Error('Cache must survive staged snapshots');\nconsole.log('MODE=' + Number(JSON.parse(process.env.SHARP_EVAL_CHANGED_FILES).some(name => name.startsWith('js/intelligence/'))));\nif (readFileSync('sample.txt', 'utf8') !== 'good') process.exitCode = 1;\n`);
     await writeFile(path.join(repo, 'sample.txt'), 'good'); git('add', '.'); git('-c', 'core.hooksPath=/dev/null', 'commit', '-qm', 'fixture');
     git('config', 'core.hooksPath', '.githooks');
     const hook = () => spawnSync('sh', ['.githooks/pre-commit'], { cwd: repo, encoding: 'utf8' });

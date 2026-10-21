@@ -1,3 +1,4 @@
+import { weeklyJourney } from '../core/engagement.js';
 import { createSessionScope, bindChoiceShortcuts } from '../core/session-scope.js';
 import { escapeHTML as h } from '../content-validation.js';
 import { projectRatings } from '../session/metrics.js';
@@ -39,6 +40,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
     const s = current();
     if (!s) { container.innerHTML = '<h1>Session unavailable</h1><a href="#/today">Return to Today</a>'; return; }
     const round = s.rounds[s.roundIndex];
+    if (['feedback', 'summary'].includes(round.phase)) window.dispatchEvent(new Event('sharp:coach-context'));
     container.innerHTML = `<div class="game-nav-bar"><a href="#/today" class="btn btn-outline">Save &amp; exit</a>
       ${s.status === 'active' ? '<button id="pauseSession" class="btn btn-outline" type="button">Pause</button>' : ''}</div>
       <div class="view-header"><div><p class="text-muted">${s.kind === 'workout' ? `Workout · Exercise ${s.roundIndex + 1} of ${s.rounds.length}` : 'Exercise'}</p>
@@ -72,6 +74,7 @@ export function renderSession(container, { repo, controller, id, navigate }) {
       stage.innerHTML = `<div class="result-summary-card"><h2 tabindex="-1">${s.status === 'completed' ? 'Session complete' : 'Exercise complete'}</h2>
         <p>${result.count} responses · ${Math.round(result.score / result.count * 100)}% ${round.game === 'pattern-flash' ? 'pattern fidelity' : 'accuracy'}.</p>
         <p>${transition ? `Rating ${transition.before} → ${transition.after} (${transition.delta >= 0 ? '+' : ''}${transition.delta})` : 'Practice saved · unrated'}</p>
+        ${s.status === 'completed' && s.kind === 'workout' && !round.practice ? `<p class="journey-reward">${weeklyJourney(state).count >= 3 ? '✺ Weekly explorer badge earned!' : `✦ ${weeklyJourney(state).count} of 3 weekly discoveries`} · Your next expedition is here tomorrow.</p>` : ''}
         <button id="roundDone" class="btn btn-primary">${s.status === 'completed' ? 'View progress' : 'Next exercise'}</button></div>`;
       stage.querySelector('h2').focus();
       part.listen(stage.querySelector('#roundDone'), 'click', () => s.status === 'completed' ? navigate('progress') : act(() => controller.nextRound(id)));

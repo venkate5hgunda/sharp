@@ -4,11 +4,11 @@ Sharp is a static, local-first cognitive practice app. [Open the live app](https
 
 Today offers a saved four-exercise circuit: pattern memory, arithmetic, logic and reading. Exercises also includes story math, forward spatial Corsi and delayed memory. Every answer has explicit feedback and a Next action. Sessions resume after navigation or reload; a second tab must take ownership before changing a session.
 
-Practice mode is self-paced and excluded from ratings and streaks. Ratings are adaptive heuristics, not validated intelligence or medical assessments. The installed curriculum contains **324 questions and 30 memory sets**, plus seeded arithmetic and visual stimuli. See [coverage and answer review](docs/CURRICULUM_COVERAGE.md) for the inventory, provisional tiers and editorial limits.
+Practice mode is self-paced and excluded from ratings and streaks. Ratings are adaptive heuristics, not validated intelligence or medical assessments. The installed curriculum contains **864 questions and 42 memory sets**, plus seeded arithmetic and visual stimuli. See [coverage and answer review](docs/CURRICULUM_COVERAGE.md) for the inventory, provisional tiers and editorial limits.
 
 Progress stays in IndexedDB. Migration archives the original `sharp:*` localStorage bytes, preserves valid legacy progress and quarantines malformed records. Backup v2 exports active sessions, study snapshots and progress with SHA-256 corruption detection. Restore supports legacy v1 files, previews conflicts and commits atomically. Keep backups outside the browser: storage can be cleared or evicted.
 
-Offline training works after the service worker finishes installing. Updates wait for all existing Sharp tabs to close so an active session keeps one release. Reminders work while the app is open; Settings can export calendar reminders. There is no server push scheduler.
+Offline training works after the service worker finishes installing. Updates wait for all existing Sharp tabs to close so an active session keeps one release. Reminders work while the app is open; Settings can export calendar reminders. Settings also offers opt-in browser alerts and a playful preview. Web Push receipt and subscription integration are available, but background subscription stays disabled until a same-origin API and scheduler are configured. See [push operations](docs/PUSH_OPERATIONS.md).
 
 Browser inference and all remote developer sharing are **disabled**. Startup does not download model weights or the optional runtime. Local diagnostics includes synthetic evaluations, failure scenarios and JSON exports. The pinned WebLLM candidate has initial desktop execution/cancellation evidence from an isolated pilot; full qualification remains pending. [Model hosting, measured results and operations](docs/INTELLIGENCE_OPERATIONS.md) explains the controls and remaining gates.
 
@@ -38,7 +38,7 @@ The optional SDK bundles are checked in, excluded from shell precaching and buil
 npm run build:inference
 ```
 
-Every commit runs **three real-model samples** against the staged snapshot in isolated headless Chromium. Model/prompt/inference changes run **all 21 real-model cases** plus provider regressions. Model artifacts stay cached; inference runs again each time. A missing browser, unsupported WebGPU device or failed output blocks the commit. [Quality bar and evidence refresh](docs/INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate). Hosted CI runs deterministic regression and checks committed full-suite evidence; it does not claim a GPU model run.
+Every commit checks the **staged snapshot** with portable deterministic evaluations and the unit suite; no GPU or model download is required while inference is disabled and the profile is unqualified. `npm run eval:full` explicitly runs fresh hardware qualification (21 arithmetic + 81 coach outputs). Enabling inference or marking the model qualified requires source-matched full real-model evidence in both the hook and CI. `npm run eval:release` checks that release boundary without launching a model. [Commit and release policy](docs/INTELLIGENCE_OPERATIONS.md#commit-evaluation-gate).
 
 CI also runs Playwright and axe in Chromium and mobile WebKit. To run that suite on a development machine with installed Playwright browsers:
 
@@ -48,3 +48,7 @@ npm run test:browser
 ```
 
 See [architecture](ARCHITECTURE.md), [implementation status](docs/IMPLEMENTATION_PROGRESS.md) and [release verification](docs/IMPLEMENTATION_VERIFICATION.md). Third-party bundled runtime notices remain in the generated files. Project code is MIT licensed.
+
+## Engagement redesign
+
+Today includes an animated daily expedition, a three-workout weekly constellation, and Pip, a dismissible practice companion. Contextual curated coaching is available offline; the experimental LLM path respects the existing disabled inference gate. [Research, competitor comparison, recommendations and measurement plan](docs/ENGAGEMENT_RESEARCH.md).

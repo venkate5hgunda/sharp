@@ -15,8 +15,11 @@ try {
   // Git exports repository-local variables to hooks; do not leak them into nested test repos.
   for (const name of git('rev-parse', '--local-env-vars').trim().split('\n')) delete env[name];
   // Use the staged gate, not unstaged prompts, code or baseline evidence.
-  const result = spawnSync(process.execPath, ['scripts/check-evals.mjs', '--real'], { cwd: snapshot, stdio: 'inherit',
+  const result = spawnSync(process.execPath, ['scripts/check-evals.mjs', '--commit'], { cwd: snapshot, stdio: 'inherit',
     env });
-  if (result.status !== 0) throw new Error('Commit blocked by LLM evaluations.');
+  if (result.status !== 0) throw new Error('Commit blocked by evaluation or release-policy checks.');
+  const files = git('ls-files', 'test/*.test.js').trim().split('\n').filter(Boolean);
+  const tests = files.length ? spawnSync(process.execPath, ['--test', ...files], { cwd: snapshot, stdio: 'inherit', env }) : { status: 0 };
+  if (tests.status !== 0) throw new Error('Commit blocked by unit tests.');
 } catch (error) { console.error(error.message); process.exitCode = 1; }
 finally { if (snapshot) await rm(snapshot, { recursive: true, force: true }); }

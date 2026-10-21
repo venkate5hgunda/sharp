@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, work]
   pull_request:
-    branches: [main]
+    branches: [main, work]
 
 jobs:
   test:
@@ -26,7 +26,7 @@ jobs:
           echo "All JS files pass syntax check"
       - name: Run unit tests
         run: npm test
-      - name: Check regression suite and committed real-model evidence
+      - name: Check portable regressions and enforce inference release policy
         run: npm run eval:regression
       - name: Verify offline manifest
         run: npm run check:offline

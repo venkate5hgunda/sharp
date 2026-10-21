@@ -1,3 +1,4 @@
+import { evaluateCoach, checkCoachEvaluation } from '../intelligence/coach-evaluation.js';
 import { createSessionScope } from '../core/session-scope.js';
 import { FEATURES } from '../core/feature-flags.js';
 import { MODEL_PROFILE } from '../intelligence/model-manifest.js';
@@ -9,7 +10,7 @@ import { downloadJSON } from '../persistence/backup-v2.js';
 export function renderModel(container, repo) {
   const scope = createSessionScope(); let service, provider, abort, report;
   scope.addCleanup(() => { abort?.abort(); service?.dispose(); });
-  container.innerHTML = `<h1 class="view-title">Model benchmark</h1><div class="workout-card"><h2>SmolLM2 360M</h2><p>${FEATURES.browserInference ? 'One model. Pilot only.' : 'One model. Inference is off.'}</p>
+  container.innerHTML = `<h1 class="view-title">Model qualification benchmark</h1><div class="workout-card"><h2>SmolLM2 360M</h2><p>${FEATURES.browserInference ? 'One model. Pilot only. Full benchmark covers 21 arithmetic outputs and 81 contextual coach outputs.' : 'One model. Inference is off.'}</p>
     <details><summary>Model &amp; download</summary><p>${MODEL_PROFILE.modelId}. ${(MODEL_PROFILE.artifactBytes / 1048576).toFixed(1)} MiB artifacts + 12 MiB runtime.</p><p>Pinned weights: Hugging Face. Pinned library: MLC on GitHub. Requires WebGPU with shader-f16. Same model on desktop, mobile and installed apps. Availability depends on device capabilities. This benchmark does not affect training or ratings.</p></details>
     <label><input id="modelConsent" type="checkbox" ${FEATURES.browserInference ? '' : 'disabled'}> Download model for a local benchmark</label>
     <p><button id="prepareModel" class="btn btn-primary" ${FEATURES.browserInference ? '' : 'disabled'}>Prepare model</button><button id="cancelModel" class="btn btn-outline" disabled>Cancel work</button></p>
@@ -36,7 +37,9 @@ export function renderModel(container, repo) {
     abort = new AbortController(); container.querySelector('#benchmarkModel').disabled = true; busy(true);
     try { Object.assign(report, await captureEvaluationInputs()); report.evaluation = await runEvaluation(service, { dataset: [...GOLDEN, ...HOLDOUT], repeats: 3, signal: abort.signal,
       onResult: (r) => { if (scope.active) status.textContent = `${r.fixtureId}: ${r.source}, ${r.timings.totalMs}ms`; } });
-      if (scope.active) { status.textContent = `${report.evaluation.accepted}/${report.evaluation.count} accepted · ${report.evaluation.fallbackCount} fallbacks. Candidate unqualified.`; container.querySelector('#downloadBenchmark').hidden = false; showReport(); }
+      report.coachEvaluation = await evaluateCoach(provider, { signal: abort.signal });
+      const coachQuality = checkCoachEvaluation(report.coachEvaluation);
+      if (scope.active) { status.textContent = `Coach ${coachQuality.count}/${coachQuality.count} accepted · arithmetic ${report.evaluation.accepted}/${report.evaluation.count} accepted · ${report.evaluation.fallbackCount} fallbacks. Candidate unqualified.`; container.querySelector('#downloadBenchmark').hidden = false; showReport(); }
       checkEvaluation(report.evaluation);
     } catch (e) { if (scope.active) status.textContent = e.message; }
     finally { if (scope.active) { container.querySelector('#benchmarkModel').disabled = provider.getStatus().state !== 'ready'; busy(false); } }
