@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Sharp — Adaptive Cognitive Fitness &amp; Brain Training</title>
+  <title>Sharp — Daily brain practice</title>
   <meta name="description" content="Progressive cognitive fitness for memory, logic, math, and comprehension puzzles. 100% local and offline with adaptive dynamic difficulty and daily streak tracking.">
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#f6f7f4">
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/games.css">
   <link rel="stylesheet" href="css/engagement.css">
+  <link rel="stylesheet" href="css/interface.css">
 </head>
 <body>
   <a class="skip-link" href="#appContainer">Skip to main content</a>
@@ -19,29 +20,23 @@
   <!-- Header Bar -->
   <header class="app-header">
     <a href="#/today" class="brand-anchor" aria-label="Sharp Home">
-      <img src="assets/logo.svg" class="brand-logo" alt="" width="36" height="36">
-      <img src="assets/wordmark.svg" class="brand-wordmark" alt="Sharp">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="brand-name">sharp<span aria-hidden="true">.</span></span>
     </a>
 
-    <div class="header-controls">
-      <button id="soundToggle" class="icon-btn" aria-label="Toggle sound effects" title="Toggle sound effects" type="button">
-        <svg class="icon sound-on-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>
-      </button>
+    <nav class="app-nav" aria-label="Main navigation">
+      <a href="#/today" class="nav-link is-active" data-route="today" aria-current="page">Today</a>
+      <a href="#/exercises" class="nav-link" data-route="exercises">Exercises</a>
+      <a href="#/progress" class="nav-link" data-route="progress">Progress</a>
+    </nav>
 
-      <button id="themeToggle" class="icon-btn" aria-label="Switch theme" title="Switch theme" type="button">
-        <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-      </button>
+    <div class="header-controls">
+      <a href="#/backup" class="nav-link utility-link" data-route="backup">Backup</a>
+      <a href="#/settings" class="nav-link utility-link" data-route="settings">Settings</a>
     </div>
   </header>
 
   <!-- Navigation Tabs -->
-  <nav class="app-nav" aria-label="Main navigation">
-    <a href="#/today" class="nav-link is-active" data-route="today" aria-current="page">Today</a>
-    <a href="#/exercises" class="nav-link" data-route="exercises">Exercises</a>
-    <a href="#/progress" class="nav-link" data-route="progress">Progress</a>
-    <a href="#/backup" class="nav-link" data-route="backup">Backup</a>
-    <a href="#/settings" class="nav-link" data-route="settings">Settings</a>
-  </nav>
 
   <!-- In-App Notification Banner Container -->
   <div id="inAppBannerHost" class="in-app-banner-host" aria-live="polite"></div>

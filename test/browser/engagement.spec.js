@@ -24,11 +24,14 @@ for (const permission of ['denied', 'granted']) test(`notification permission ${
     if (!('serviceWorker' in navigator)) Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { register: async () => { throw new Error('Test worker registration unavailable'); } } });
   }, permission);
   await page.goto('/#/settings');
+  await page.getByText('Advanced', { exact: true }).click();
   const supported=await page.evaluate(()=>isSecureContext&&'serviceWorker' in navigator&&'PushManager' in window);
   const { PUSH_CONFIG }=await import('../../js/push.js');
   expect(await page.getByRole('button', { name: 'Enable background push' }).isEnabled()).toBe(Boolean(supported&&PUSH_CONFIG.subscriptionEndpoint&&PUSH_CONFIG.applicationServerKey));
+  await expect(page.getByLabel('Daily reminder time', { exact: true })).toHaveValue('08:30');
+  await page.getByText('Reminders', { exact: true }).click();
   expect(await page.evaluate(() => window.permissionRequests)).toBe(0);
-  await page.getByRole('button', { name: 'Enable playful browser alerts' }).click();
+  await page.getByRole('button', { name: 'Enable browser alerts' }).click();
   await expect(page.locator('#alertStatus')).toHaveText(permission === 'denied'
     ? 'Alerts are not enabled. You can change this in browser settings.'
     : 'Browser alerts enabled. Sharp must be open for scheduled checks.');
@@ -40,13 +43,14 @@ test('unsupported notifications offer calendar reminders without requesting perm
   await page.addInitScript(() => { Reflect.deleteProperty(window, 'Notification'); });
   await page.goto('/#/settings');
   expect(await page.evaluate(() => 'Notification' in window)).toBe(false);
-  await page.getByRole('button', { name: 'Enable playful browser alerts' }).click();
+  await page.getByText('Reminders', { exact: true }).click();
+  await page.getByRole('button', { name: 'Enable browser alerts' }).click();
   await expect(page.locator('#alertStatus')).toHaveText('Browser alerts are unavailable. Try calendar reminders.');
   await expect(page.getByRole('button', { name: 'Download calendar reminders' })).toBeEnabled();
 });
 test('reduced motion disables decorative animation', async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/#/today'); await expect(page.locator('.planet')).toBeVisible();
-  expect(await page.locator('.planet').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
+  await page.emulateMedia({ reducedMotion: 'reduce' }); await page.goto('/#/today'); await expect(page.locator('.daily-card')).toBeVisible();
+  expect(await page.locator('.daily-card').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await page.locator('.pip-body').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
 });
 

@@ -10,10 +10,10 @@ export function renderMemory(container, { repo, controller, navigate }) {
   const run = async (action, redraw = true) => { try { await action(); if (scope.active && redraw) draw(); } catch (e) { if (scope.active) container.querySelector('#memoryError').textContent = e.message; } };
   function draw() {
     const state = repo.snapshot(), memory = state.memory;
-    container.innerHTML = '<h1 class="view-title">Memory recall</h1><p id="memoryError" role="alert"></p><div id="memoryStage" class="workout-card"></div>';
+    container.innerHTML = '<header class="session-header"><div class="session-toolbar"><a class="session-exit" href="#/exercises">← Exercises</a><div class="session-title"><h1 id="memoryTitle">Memory recall</h1><p>Study now. Recall later.</p></div><span></span></div><p id="memoryError" role="alert"></p></header><div class="memory-stage-wrap"><div id="memoryStage" class="workout-card memory-card" role="region" aria-labelledby="memoryTitle"></div></div>';
     const stage = container.querySelector('#memoryStage');
     if (studying) {
-      stage.innerHTML = `<h2>${h(studying.title)}</h2><p>Study the words, then save your set.</p><ul class="study-items">${studying.targetItems.map((i) => `<li><strong>${h(i.word)}</strong> — ${h(i.cue)}</li>`).join('')}</ul>
+      stage.innerHTML = `<h2>${h(studying.title)}</h2><p>Remember these words.</p><ul class="study-items" tabindex="0" aria-label="Words to remember">${studying.targetItems.map((i) => `<li><strong>${h(i.word)}</strong><span>${h(i.cue)}</span></li>`).join('')}</ul>
         <label><input id="quickStudy" type="checkbox"> 3-minute practice · unrated</label>
         <p><button id="commitStudy" class="btn btn-primary">Save study set</button> <button id="cancelStudy" class="btn btn-outline">Cancel</button></p>`;
       scope.listen(stage.querySelector('#cancelStudy'), 'click', () => { studying = null; draw(); });
@@ -29,11 +29,10 @@ export function renderMemory(container, { repo, controller, navigate }) {
       }));
     } else if (memory?.status === 'committed') {
       const ready = Date.now() >= memory.readyAt;
-      stage.innerHTML = `<h2>${ready ? 'Your recall is ready' : 'Study set saved'}</h2><p>${memory.items.length} words saved ${new Date(memory.createdAt).toLocaleString()}.</p>
-        <p>Recall opens ${new Date(memory.readyAt).toLocaleString()}. ${memory.type === 'quick_timer' ? 'Unrated practice.' : ''}</p>
-        <p>Calendar reminders are in Settings.</p>
-        ${ready ? '<button id="recallStudy" class="btn btn-primary">Start recall</button><button id="freeRecall" class="btn btn-outline">Free recall · unrated</button>' : '<button id="checkReady" class="btn btn-outline">Check readiness</button>'}`;
-      scope.listen(stage.querySelector('#checkReady') || new EventTarget(), 'click', draw);
+      stage.innerHTML = `<span class="completion-mark" aria-hidden="true">✓</span><h2>${ready ? 'Your recall is ready' : 'Study set saved'}</h2><p>${ready ? `See how many of your ${memory.items.length} words you remember.` : `Come back at ${new Date(memory.readyAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })} to recall your ${memory.items.length} words.`}</p>
+        ${memory.type === 'quick_timer' ? '<p class="helper-text">Practice without scoring</p>' : ''}
+        ${ready ? '<button id="recallStudy" class="btn btn-primary">Start recall</button><details><summary>Try writing the words instead</summary><button id="freeRecall" class="btn btn-outline">Free recall · unrated</button></details>' : '<a class="btn btn-primary" href="#/today">Back to Today</a>'}`;
+      if (!ready) scope.timeout(() => { if (repo.snapshot().memory?.id === memory.id) draw(); }, Math.max(0, memory.readyAt - Date.now()) + 50);
       scope.listen(stage.querySelector('#recallStudy') || new EventTarget(), 'click', () => run(async () => { navigate(`session/${await controller.recallMemory()}`); }));
       scope.listen(stage.querySelector('#freeRecall') || new EventTarget(), 'click', () => {
         stage.innerHTML = '<h2>Free recall practice</h2><p>One word per line. Exact matches only. Later recognition stays unrated.</p><label for="recallWords">Remembered items</label><textarea id="recallWords" rows="7"></textarea><button id="scoreRecall" class="btn btn-primary">Check recall</button>';

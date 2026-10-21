@@ -49,8 +49,12 @@ npm run test:browser
 
 See [architecture](ARCHITECTURE.md), [implementation status](docs/IMPLEMENTATION_PROGRESS.md) and [release verification](docs/IMPLEMENTATION_VERIFICATION.md). Third-party bundled runtime notices remain in the generated files. Project code is MIT licensed.
 
-## Engagement redesign
+## Interface
 
-Today includes an animated daily expedition, a three-workout weekly constellation, and Pip, a dismissible practice companion. Contextual curated coaching is available offline; the experimental LLM path respects the existing disabled inference gate. [Research, competitor comparison, recommendations and measurement plan](docs/ENGAGEMENT_RESEARCH.md).
+The home screen offers one daily workout and a compact weekly record. Exercises use plain labels and optional topic filters. Starting an individual exercise goes straight to the game after its instructions and settings.
+
+Active exercises use the full viewport, with navigation and the coach hidden. Questions, boards and answer controls stay inside the frame; longer passages scroll inside the card. Keyboard shortcuts, saved answers, pause/resume and offline practice are retained. The word-memory screen uses the same focused layout and opens recall automatically when its waiting period ends.
+
+Progress shows results before detailed trends. Settings keeps reminder and developer options behind expandable sections. Pip remains available on the main screens for optional encouragement.
 
 Real evaluations automatically use CPU when WebGPU is unavailable (`npm run eval:full`); force a backend with `eval:cpu` or `eval:gpu`. The app uses a bundled contextual response repository without a supported GPU and spaces automatic coaching at least 90 seconds apart. [CPU evaluation and offline-coach operations](docs/CPU_EVALUATIONS.md).

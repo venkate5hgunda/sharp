@@ -10,23 +10,23 @@ import { setTheme } from '../theme.js';
 import { FEATURES } from '../core/feature-flags.js';
 export function renderSettings(container, repo) {
   const scope = createSessionScope(), p = repo.snapshot().preferences;
-  container.innerHTML = `<h1 class="view-title">Settings</h1><p id="settingsStatus" role="status"></p>
-    <div class="settings-card"><h2>Interface</h2>
-    <p><label><input id="soundPreference" type="checkbox" ${p.sound !== false ? 'checked' : ''}> Sound effects</label></p>
-    <p><label><input id="hapticsPreference" type="checkbox" ${p.haptics !== false ? 'checked' : ''}> Haptics</label></p>
-    <label for="themePreference">Theme</label><select id="themePreference">${['auto', 'light', 'dark'].map((t) => `<option value="${t}" ${t === (p.theme || 'auto') ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-    <div class="settings-card"><h2>Reminders</h2><p>In-app reminders work while Sharp is open. Use your calendar for alerts.</p>
-    <p><button id="enableAlerts" class="btn btn-outline">Enable playful browser alerts</button> <button id="previewAlert" class="btn btn-outline">Preview Pip’s reminder</button> <button id="disableAlerts" class="btn btn-outline">Turn browser alerts off</button></p><p id="alertStatus" role="status">Browser alerts: ${p.browserAlerts ? 'enabled' : 'off'}. Scheduled alerts require Sharp to be open. Calendar reminders work when it is closed.</p><p><label for="pushTime">Daily push time (08:00–20:59)</label><input id="pushTime" type="time" min="08:00" max="20:59" value="${h(p.pushTime || '08:30')}"></p><button id="subscribePush" class="btn btn-outline" ${pushAvailable() ? '' : 'disabled'}>Enable background push</button><p>${pushAvailable() ? 'Opt in to at most one playful reminder per day, between 08:00 and 21:00 in your timezone. The service stores your push subscription, timezone, reminder time, completion date and recall-ready time; no answers or scores. Open-app system alerts are suppressed while background push is active.' : 'Background push service is not configured on this static installation.'}</p>
-    <p><label><input id="foregroundReminders" type="checkbox" ${p.foregroundReminders ? 'checked' : ''}> In-app reminders</label></p>
-    <p><label for="morningTime">Study time</label><input id="morningTime" type="time" value="${h(p.morningTime || '08:30')}"></p>
-    <p><label for="eveningTime">Recall time</label><input id="eveningTime" type="time" value="${h(p.eveningTime || '19:30')}"></p>
-    <button id="calendarExport" class="btn btn-primary">Download calendar reminders</button></div>
-    <div class="settings-card"><h2>Storage</h2><p>Progress stays here. Works offline after setup. Keep a backup.</p>
-    <button id="persistStorage" class="btn btn-outline">Protect local storage</button><p id="storageStatus"></p><a class="btn btn-outline" href="#/backup">Backup &amp; content</a></div>
-    <div class="settings-card"><h2>AI &amp; privacy</h2><p>On-device AI: ${FEATURES.browserInference ? 'on' : 'off'}. </p>
-    <p>Developer sharing: ${FEATURES.remoteDeveloperTelemetry ? 'on' : 'off'}. </p>
-    <a class="btn btn-outline" href="#/diagnostics">Developer tools</a></div>
-    <div class="settings-card"><h2>Reset progress</h2><p>Deletes this device’s progress. Back up first.</p><button id="resetProgress" class="btn btn-danger">Reset this browser</button></div>`;
+  container.innerHTML = `<div class="view-header"><h1 class="view-title">Settings</h1></div><p id="settingsStatus" role="status"></p>
+    <div class="settings-card"><h2>Appearance &amp; sound</h2>
+      <div class="preference-row"><label for="themePreference">Theme</label><select id="themePreference">${[['auto', 'System'], ['light', 'Light'], ['dark', 'Dark']].map(([value, label]) => `<option value="${value}" ${value === (p.theme || 'auto') ? 'selected' : ''}>${label}</option>`).join('')}</select></div>
+      <div class="preference-row"><label for="soundPreference">Sound effects</label><input id="soundPreference" type="checkbox" ${p.sound !== false ? 'checked' : ''}></div>
+      <div class="preference-row"><label for="hapticsPreference">Vibration</label><input id="hapticsPreference" type="checkbox" ${p.haptics !== false ? 'checked' : ''}></div></div>
+    <details class="settings-card"><summary>Reminders</summary><p>Choose when to study and recall.</p>
+      <div class="preference-row"><label for="morningTime">Study time</label><input id="morningTime" type="time" value="${h(p.morningTime || '08:30')}"></div>
+      <div class="preference-row"><label for="eveningTime">Recall time</label><input id="eveningTime" type="time" value="${h(p.eveningTime || '19:30')}"></div>
+      <p>Calendar reminders work even when Sharp is closed.</p><button id="calendarExport" class="btn btn-primary">Download calendar reminders</button>
+      <div class="preference-row"><label for="foregroundReminders">Remind me while Sharp is open</label><input id="foregroundReminders" type="checkbox" ${p.foregroundReminders ? 'checked' : ''}></div>
+      <p id="alertStatus" role="status">Browser alerts are ${p.browserAlerts ? 'on' : 'off'}. Sharp needs to be open.</p>
+      <button id="enableAlerts" class="btn btn-outline">Enable browser alerts</button><button id="previewAlert" class="btn btn-outline">Preview reminder</button><button id="disableAlerts" class="btn btn-outline">Turn alerts off</button></details>
+    <div class="settings-card"><h2>Your data</h2><p>Your progress stays on this device.</p><a class="btn btn-primary" href="#/backup">Back up or restore</a><button id="persistStorage" class="btn btn-outline">Protect saved progress</button><p id="storageStatus" role="status"></p></div>
+    <details class="settings-card"><summary>Advanced</summary>
+      <h2>Background alerts</h2><div class="preference-row"><label for="pushTime">Daily reminder time</label><input id="pushTime" type="time" min="08:00" max="20:59" value="${h(p.pushTime || '08:30')}"></div><p>${pushAvailable() ? 'At most one reminder a day, between 08:00 and 21:00. Works when Sharp is closed.' : 'Unavailable on this version of Sharp. Use calendar reminders instead.'}</p><p>The reminder service stores your subscription, timezone, reminder time, completion date and recall time. Answers and scores stay on this device.</p><button id="subscribePush" class="btn btn-outline" ${pushAvailable() ? '' : 'disabled'}>Enable background push</button>
+      <h2>Privacy</h2><p>On-device AI: ${FEATURES.browserInference ? 'on' : 'off'}. Developer sharing: ${FEATURES.remoteDeveloperTelemetry ? 'on' : 'off'}.</p><a class="btn btn-outline" href="#/diagnostics">Developer tools</a>
+      <h2>Reset progress</h2><p>Deletes progress on this device. Back up first.</p><button id="resetProgress" class="btn btn-danger">Reset this browser</button></details>`;
   const status = container.querySelector('#settingsStatus');
   const alertStatus = container.querySelector('#alertStatus');
   for (const [id, action, message] of [

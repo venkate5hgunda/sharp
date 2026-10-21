@@ -7,11 +7,11 @@ import { localDayKey } from '../core/calendar.js';
 
 export function renderBackup(container, repo) {
   const scope = createSessionScope();
-  container.innerHTML = `<h1 class="view-title">Backup &amp; content</h1><p>Save your progress. Restore it anytime.</p>
+  container.innerHTML = `<div class="view-header"><h1 class="view-title">Backup</h1></div><p>Save your progress. Restore it anytime.</p>
     <p id="backupStatus" role="status"></p><div class="backup-card"><h2>Export progress</h2><p>Keep a copy outside this browser.</p><button id="exportProgress" class="btn btn-primary">Download backup</button>
-    <button id="exportContent" class="btn btn-outline">Export curriculum</button></div>
+    </div>
     <div class="backup-card"><h2>Restore or merge</h2><label for="backupFile">Choose a backup (JSON, up to 20 MiB)</label><input id="backupFile" type="file" accept=".json,application/json"><div id="restorePreview"></div></div>
-    <div class="backup-card"><h2>Import a question pack</h2><p>Custom questions are unrated. Built-in items stay protected.</p><label for="contentFile">Question pack (JSON, up to 5 MiB)</label><input id="contentFile" type="file" accept=".json,application/json"></div>`;
+    <details class="backup-card"><summary>Question packs</summary><p>Add your own questions for practice.</p><button id="exportContent" class="btn btn-outline">Export questions</button><label for="contentFile">Question pack (JSON, up to 5 MiB)</label><input id="contentFile" type="file" accept=".json,application/json"></details>`;
   const status = container.querySelector('#backupStatus');
   const run = async (action) => { try { await action(); } catch (e) { if (scope.active) status.textContent = e.message; } };
   scope.listen(container.querySelector('#exportProgress'), 'click', () => run(async () => {

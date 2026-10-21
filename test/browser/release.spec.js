@@ -4,8 +4,8 @@ async function checkAccessibility(page) {
   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   expect(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }))).toEqual([]);
 }
-async function completeRound(page, game) {
-  await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
+async function completeRound(page, game, begin = true) {
+  if (begin) await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
   const count = game === 'pattern-flash' ? 2 : game === 'corsi-span' ? 5 : game === 'math-arithmetic' ? 8 : game === 'logic-deduction' ? 4 : game === 'story-math' ? 5 : 3;
   for (let i = 0; i < count; i++) {
     if (game === 'pattern-flash') {
@@ -28,10 +28,10 @@ async function completeRound(page, game) {
 }
 for (const game of ['pattern-flash', 'corsi-span', 'story-math', 'comprehension-inference']) {
   test(`${game}: accessible practice completes through shared lifecycle`, async ({ page }) => {
-    await page.goto(`/#/games/${game}`); await page.getByLabel('Untimed practice · unrated', { exact: true }).check();
+    await page.goto(`/#/games/${game}`); await page.getByLabel('Practice without scoring', { exact: true }).check();
     await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Quick guide' })).toBeVisible(); await checkAccessibility(page);
-    await completeRound(page, game); await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
+    await expect(page.locator('#sessionStage')).toBeVisible(); await checkAccessibility(page);
+    await completeRound(page, game, false); await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
     await checkAccessibility(page); await page.getByRole('button', { name: 'View progress', exact: true }).click();
     await expect(page.getByText('No scored results yet')).toBeVisible(); await checkAccessibility(page);
   });
@@ -58,7 +58,7 @@ test('delayed memory preserves committed study, gates readiness and completes fa
   await page.getByLabel('3-minute practice', { exact: false }).check(); await page.getByRole('button', { name: 'Save study set' }).click();
   await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible();
   await page.reload(); await expect(page.getByRole('heading', { name: 'Study set saved' })).toBeVisible(); await checkAccessibility(page);
-  await page.clock.fastForward(181000); await page.getByRole('button', { name: 'Check readiness' }).click();
+  await page.clock.fastForward(181000);
   await page.getByRole('button', { name: 'Start recall' }).click(); await page.getByRole('button', { name: 'Begin exercise' }).click();
   await expect(page.locator('#sessionStage')).toContainText(/Question 1 of \d+/);
   const count = Number((await page.locator('#sessionStage').innerText()).match(/Question 1 of (\d+)/)[1]);
@@ -67,7 +67,7 @@ test('delayed memory preserves committed study, gates readiness and completes fa
     await page.getByRole('button', { name: i === count - 1 ? 'View results' : 'Next question', exact: true }).click();
   }
   await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'View progress', exact: true }).click(); await expect(page.getByText(/recognition · .* hours actual delay · fast-track · unrated/)).toBeVisible();
+  await page.getByRole('button', { name: 'View progress', exact: true }).click(); await page.getByText('Memory recall', { exact: true }).click(); await expect(page.getByText(/recognition · .* hours actual delay · fast-track · unrated/)).toBeVisible();
 });
 test('diagnostics evaluation renders validated and fallback fixtures without optional runtime or external requests', async ({ page }) => {
   const forbidden = []; page.on('request', (r) => { if (!r.url().startsWith('http://127.0.0.1:8080') || r.url().includes('/optional-runtime/')) forbidden.push(r.url()); });
@@ -83,13 +83,12 @@ test('installed shell reloads offline into an unvisited exercise', async ({ page
   await page.goto('/#/today'); await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload(); await expect(page.locator('main h1')).toHaveText('Today');
   await context.setOffline(true); await page.goto('/#/games/story-math'); await page.reload();
-  await page.getByRole('button', { name: 'Start exercise', exact: true }).click(); await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
+  await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
   await page.locator('[data-val]').first().click(); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   await context.setOffline(false);
 });
 test('held Enter cannot skip feedback or answer the following question', async ({ page }) => {
   await page.goto('/#/games/math-arithmetic'); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
-  await page.getByRole('button', { name: 'Begin exercise', exact: true }).click();
   await expect(page.locator('[data-val]').first()).toBeFocused();
   await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   await page.keyboard.down('Enter'); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
@@ -98,7 +97,7 @@ test('held Enter cannot skip feedback or answer the following question', async (
 });
 test('cross-tab ownership requires takeover and rejects the stale owner', async ({ page, context }) => {
   await page.goto('/#/games/logic-deduction'); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
-  await page.getByRole('button', { name: 'Begin exercise', exact: true }).click(); const url = page.url();
+  await expect(page.locator('[data-val]').first()).toBeVisible(); const url = page.url();
   const other = await context.newPage(); await other.goto(url);
   await expect(other.getByRole('heading', { name: 'Session paused' })).toBeVisible();
   await other.getByRole('button', { name: 'Take over from another tab', exact: true }).click();

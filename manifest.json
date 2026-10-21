@@ -1,5 +1,5 @@
 {
-  "name": "Sharp — Adaptive Brain Training",
+  "name": "Sharp — Daily brain practice",
   "short_name": "Sharp",
   "description": "Progressive cognitive fitness for memory, logic, math, and comprehension. 100% local and offline.",
   "lang": "en",
@@ -8,8 +8,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#090d16",
-  "theme_color": "#090d16",
+  "background_color": "#f6f7f4",
+  "theme_color": "#f6f7f4",
   "categories": ["education", "health", "games"],
   "icons": [
     { "src": "assets/favicon.svg", "sizes": "any", "type": "image/svg+xml" },

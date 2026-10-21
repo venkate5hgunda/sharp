@@ -27,7 +27,7 @@ export function applyTheme(preference) {
 
   const metaThemeColor = document.querySelector(THEME_COLOR_META);
   if (metaThemeColor) {
-    metaThemeColor.setAttribute('content', effective === 'dark' ? '#090d16' : '#f4f6fb');
+    metaThemeColor.setAttribute('content', effective === 'dark' ? '#141c18' : '#f6f7f4');
   }
 
   // Update theme toggle UI state if present
@@ -68,10 +68,4 @@ export function initTheme() {
     });
   }
 
-  const toggleBtn = document.getElementById('themeToggle');
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', () => {
-      toggleTheme();
-    });
-  }
 }
