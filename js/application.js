@@ -1,6 +1,6 @@
 import { weeklyJourney } from './core/engagement.js';
 import { mountCoach } from './coach.js';
-import { showBrowserReminder } from './push.js';
+import { showBrowserReminder, syncPushState } from './push.js';
 import { initRepository } from './persistence/repository.js';
 import { SessionController } from './session/controller.js';
 import { progressMetrics } from './session/metrics.js';
@@ -84,6 +84,7 @@ export async function boot() {
     else if (path === 'model') { const { renderModel } = await import('./views/model-view.js'); if (version === routeVersion) cleanup = renderModel(container, repo); }
     else if (path === 'diagnostics') { const { renderDiagnostics } = await import('./views/diagnostics-view.js'); if (version === routeVersion) cleanup = renderDiagnostics(container, repo, diagnostics); }
     else { navigate('today'); return; }
+    syncPushState(repo).catch(() => showStatus('Push reminder sync is pending. Reopen Settings when online.'));
     const heading = container.querySelector('h1'); if (heading) { heading.tabIndex = -1; heading.focus({ preventScroll: true }); }
   }
   function today() {
