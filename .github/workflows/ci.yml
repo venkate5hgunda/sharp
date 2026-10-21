@@ -28,6 +28,13 @@ jobs:
         run: npm test
       - name: Check portable regressions and enforce inference release policy
         run: npm run eval:regression
+      - name: Cache pinned CPU evaluation artifacts
+        uses: actions/cache@v4
+        with:
+          path: .cache/sharp-evals/cpu
+          key: cpu-model-${{ runner.os }}-${{ hashFiles('scripts/cpu-profile.mjs') }}
+      - name: Run real model evaluations (CPU when GPU is unavailable)
+        run: npm run eval:full
       - name: Verify offline manifest
         run: npm run check:offline
       - name: Install test browsers
@@ -39,3 +46,14 @@ jobs:
         with:
           name: browser-failures
           path: test-results/
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-evaluation-reports
+          if-no-files-found: ignore
+          path: |
+            .cache/sharp-evals/latest-cpu-report.json
+            .cache/sharp-evals/latest-model-report.json
+            .cache/sharp-evals/latest-capability-report.json
+            .cache/sharp-evals/latest-failed-run.json

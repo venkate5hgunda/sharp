@@ -1,3 +1,4 @@
+import { contextualResponses } from './coach-responses.js';
 import { validCoachInput } from '../intelligence/coach-contract.js';
 import { localDayKey, shiftLocalDay } from './calendar.js';
 export const EXPEDITIONS = ['Pattern planet', 'Number nebula', 'Logic lagoon', 'Story summit', 'Memory meadow', 'Focus forest', 'Discovery day'];
@@ -17,6 +18,6 @@ export function coachContext(state, route = 'today') {
   return context;
 }
 export function curatedQuote(context, variation = 0) {
-  const lines = context.screen === 'session' && context.recentResult === 'challenging' ? ['That one was tricky. Check the explanation and try a different strategy.', 'Pause for a breath. The next clue is a fresh start.'] : context.screen === 'session' ? ['One puzzle at a time. Look for the small clue.', 'Take a breath. A thoughtful answer beats a rushed guess.', 'Try a new strategy; mistakes are useful feedback.'] : context.recentResult === 'challenging' ? ['That was a stretch. Try an untimed round and explore a different strategy.', 'A tricky round is a good moment to pause, then try again.'] : ['Your next small discovery is one puzzle away.', 'Show up curious. Leave with a little more practice.', 'Plant a memory now. See what grows when you recall it later.'];
-  return lines[variation % lines.length];
+  const lines = contextualResponses(context);
+  return lines[Math.abs(variation) % lines.length];
 }

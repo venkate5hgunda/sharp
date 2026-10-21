@@ -7,7 +7,7 @@ export const SMOKE_DATASET = Object.freeze(GOLDEN.slice(0, 3));
 export const QUALITY = Object.freeze({ repeats: 3, maxP95Ms: 3000, maxTaskMs: 10000 });
 const requireQuality = (condition, message) => { if (!condition) throw new Error(`Eval quality: ${message}`); };
 
-export function checkEvaluation(evaluation, { dataset = FULL_DATASET, repeats = QUALITY.repeats, source = 'model' } = {}) {
+export function checkEvaluation(evaluation, { dataset = FULL_DATASET, repeats = QUALITY.repeats, source = 'model', artifactIdentity, maxP95Ms = QUALITY.maxP95Ms } = {}) {
   const count = dataset.length * repeats;
   requireQuality(evaluation?.version === 'sharp-eval-v1' && evaluation.cancelled === false, 'missing or cancelled evaluation');
   requireQuality(evaluation.results?.length === count && evaluation.count === count, `expected ${count} results`);
@@ -19,14 +19,14 @@ export function checkEvaluation(evaluation, { dataset = FULL_DATASET, repeats = 
     requireQuality(result.status === 'success' && result.source === source && result.acceptedProviderOutput === true && result.valid === true, `${fixture.id}: rejected, fallback or wrong provider`);
     requireQuality(validateOutput(result.output, fixture.input), `${fixture.id}: schema or arithmetic failed`);
     requireQuality(result.taskId === 'arithmetic-explanation' && result.promptVersion === prompt.version && result.validatorVersion === prompt.validatorVersion, 'prompt/validator identity');
-    requireQuality(result.artifact === (source === 'model' ? artifact : 'sharp-stub-v1'), 'artifact identity');
+    requireQuality(result.artifact === (artifactIdentity || (source === 'model' ? artifact : 'sharp-stub-v1')), 'artifact identity');
     requireQuality(Number.isFinite(result.timings?.totalMs) && result.timings.totalMs >= 0 && result.timings.totalMs <= QUALITY.maxTaskMs, 'task latency');
   }
   const times = evaluation.results.map((result) => result.timings.totalMs).sort((a, b) => a - b);
   const p50 = times[Math.floor((count - 1) * .5)], p95 = times[Math.floor((count - 1) * .95)];
   requireQuality(evaluation.accepted === count && evaluation.acceptedRate === 1 && evaluation.fallbackCount === 0, 'acceptance totals');
   requireQuality(evaluation.p50Ms === p50 && evaluation.p95Ms === p95, 'latency totals');
-  requireQuality(p95 <= QUALITY.maxP95Ms, `p95 exceeds ${QUALITY.maxP95Ms}ms`);
+  requireQuality(p95 <= maxP95Ms, `p95 exceeds ${maxP95Ms}ms`);
   return { count, p95Ms: p95 };
 }
 export function checkModelReport(report, inputs, evaluationOptions) {

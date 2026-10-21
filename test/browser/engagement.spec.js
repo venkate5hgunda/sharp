@@ -25,3 +25,13 @@ test('reduced motion disables decorative animation', async ({ page }) => {
   expect(await page.locator('.planet').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
   expect(await page.locator('.pip-body').evaluate(el => getComputedStyle(el).animationName)).toBe('none');
 });
+
+test('automatic coach context events respect the cooldown while manual requests still rotate', async ({ page }) => {
+  await page.goto('/#/today');
+  await page.getByRole('button', { name: 'Talk to Pip, your practice coach' }).click();
+  const initial = await page.locator('#pipQuote').textContent();
+  await page.evaluate(() => { for (let i = 0; i < 10; i++) window.dispatchEvent(new Event('sharp:coach-context')); });
+  await expect(page.locator('#pipQuote')).toHaveText(initial);
+  await page.getByRole('button', { name: 'A little encouragement' }).click();
+  await expect(page.locator('#pipQuote')).not.toHaveText(initial);
+});

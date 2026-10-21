@@ -1,3 +1,5 @@
+> Update: real model tests now automatically fall back to pinned CPU inference when WebGPU is unavailable. CPU reports do not qualify the GPU browser release. See [current CPU and fallback policy](CPU_EVALUATIONS.md). The GPU failure described below remains valid historical evidence.
+
 # Pip model qualification — current status
 
 **Blocked, not qualified.** A fresh run in the managed environment reached WebGPU admission but reported `shader_f16_unavailable`. Secure context, IndexedDB, worker and WebGPU checks passed; the pinned model's required shader-f16 feature did not. No real-model samples were executed in that invocation. There is no substitute model, software-GPU override, historical-report substitution or automatic public enablement.

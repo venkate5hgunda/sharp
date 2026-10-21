@@ -13,7 +13,9 @@ import { MODEL_PROFILE } from '../js/intelligence/model-manifest.js';
 const root = fileURLToPath(new URL('../', import.meta.url));
 try {
   const args = new Set(process.argv.slice(2));
-  for (const arg of args) if (!['--commit', '--regression-only', '--full', '--real', '--release'].includes(arg)) throw new Error(`Unknown evaluation option: ${arg}`);
+  for (const arg of args) if (!['--commit', '--regression-only', '--full', '--real', '--release', '--cpu', '--gpu'].includes(arg)) throw new Error(`Unknown evaluation option: ${arg}`);
+  if (args.has('--cpu') && args.has('--gpu')) throw new Error('Choose only one inference backend');
+  if ((args.has('--cpu') || args.has('--gpu')) && !args.has('--real')) throw new Error('Backend selection requires --real');
   if (args.has('--real') && (args.has('--commit') || args.has('--regression-only') || args.has('--release'))) throw new Error('Real-model qualification must run separately from commit/regression/release verification.');
   const coachHarness = await evaluateCoach(reviewedFixtureProvider(), { source: 'fixture' });
   console.log(`Coach deterministic harness: ${checkCoachEvaluation(coachHarness, { source: 'fixture' }).count} cases passed (not model evidence).`);
@@ -27,8 +29,8 @@ try {
   if (args.has('--real')) {
     // Only explicit qualification launches Chromium/downloads weights. No fallback on failure.
     const { runModelEvaluations } = await import('./run-model-evals.mjs');
-    await runModelEvaluations({ full: true, inputs: await evaluationInputs(root), cacheDir: process.env.SHARP_EVAL_CACHE_DIR || path.join(root, '.cache/sharp-evals') });
-    console.log('Fresh full qualification completed. Record its report with eval:record; enablement remains a separate reviewed change.');
+    await runModelEvaluations({ full: true, inputs: await evaluationInputs(root), backend: args.has('--cpu') ? 'cpu' : args.has('--gpu') ? 'gpu' : 'auto', cacheDir: process.env.SHARP_EVAL_CACHE_DIR || path.join(root, '.cache/sharp-evals') });
+    console.log('Fresh real inference completed. CPU results test model behavior; only WebGPU evidence can qualify the browser release.');
   } else {
     const evidenceRequired = FEATURES.browserInference || MODEL_PROFILE.qualified || args.has('--release');
     const report = evidenceRequired ? JSON.parse(await readFile(path.join(root, 'evals/model-baseline.json'), 'utf8').catch(() => 'null')) : null;

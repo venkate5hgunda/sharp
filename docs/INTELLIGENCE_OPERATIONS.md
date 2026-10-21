@@ -1,3 +1,5 @@
+> Current test backend policy: `eval:full` falls back to real CPU inference when GPU admission is unavailable; `eval:gpu` is GPU-only. The app uses offline contextual responses without a supported GPU. See [CPU operations](CPU_EVALUATIONS.md). Earlier statements forbidding all test-time CPU backends describe the superseded policy.
+
 # Intelligence and diagnostics operations
 
 Release date: 2026-10-19. All inference and remote-sharing deployment flags remain false. Core training works without these systems.

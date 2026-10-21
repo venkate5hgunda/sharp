@@ -18,7 +18,9 @@
     "eval:full": "node scripts/check-evals.mjs --real --full",
     "eval:record": "node scripts/record-model-eval.mjs",
     "eval:regression": "node scripts/check-evals.mjs --regression-only --full",
-    "eval:release": "node scripts/check-evals.mjs --release"
+    "eval:release": "node scripts/check-evals.mjs --release",
+    "eval:cpu": "node scripts/check-evals.mjs --real --cpu --full",
+    "eval:gpu": "node scripts/check-evals.mjs --real --gpu --full"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

@@ -52,3 +52,5 @@ See [architecture](ARCHITECTURE.md), [implementation status](docs/IMPLEMENTATION
 ## Engagement redesign
 
 Today includes an animated daily expedition, a three-workout weekly constellation, and Pip, a dismissible practice companion. Contextual curated coaching is available offline; the experimental LLM path respects the existing disabled inference gate. [Research, competitor comparison, recommendations and measurement plan](docs/ENGAGEMENT_RESEARCH.md).
+
+Real evaluations automatically use CPU when WebGPU is unavailable (`npm run eval:full`); force a backend with `eval:cpu` or `eval:gpu`. The app uses a bundled contextual response repository without a supported GPU and spaces automatic coaching at least 90 seconds apart. [CPU evaluation and offline-coach operations](docs/CPU_EVALUATIONS.md).
