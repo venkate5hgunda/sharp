@@ -1,14 +1,14 @@
 # Background push operations
 
-The public app runs at https://venkate5hgunda.github.io/sharp/. The push API is deployed at https://sharp-push.cheeryowl513.chatgpt.site, currently private pending explicit approval to change its audience. Client integration and the scheduler must remain on the review branch until that approval. Closed-browser delivery has not yet been verified with a real opt-in device.
+The public app runs at https://venkate5hgunda.github.io/sharp/. The push API is deployed at https://sharp-push.cheeryowl513.chatgpt.site, public following explicit user approval. The client integration and scheduler were merged into main in PR #2. Closed-browser delivery has not yet been verified with a real opt-in device.
 
 ## Architecture and activation
 
 `server/push/worker.js` is the canonical service source, mirrored into the Sites source repository for project `appgprj_6ad90bd1ed848191b14d387af7b429d2`. It runs as a Worker with durable R2 binding `BUCKET`. Hosting secrets contain `VAPID_PRIVATE_JWK` and an emergency `SCHEDULER_SECRET`; only `VAPID_PUBLIC_KEY` is public. Never rotate the VAPID identity casually: existing browser subscriptions bind to it.
 
-The remaining activation steps are public-audience approval, publishing that audience change, merging the verified client/scheduler branch, and manually dispatching `push-reminders.yml` to verify the production identity. Then opt in on a real device and verify receipt with the app closed, click destination and opt-out. iOS requires a compatible installed home-screen web app. Calendar export remains available.
+The production identity was verified by successful manual run [39686614973](https://github.com/venkate5hgunda/sharp/actions/runs/39686614973). The scheduled workflow is enabled. Remaining device verification: opt in on a real device and verify receipt with the app closed, click destination and opt-out. iOS requires a compatible installed home-screen web app. Calendar export remains available.
 
-The GitHub workflow runs approximately every 15 minutes, with GitHub scheduling delays possible. It obtains a short-lived GitHub OIDC token; no repository Actions secret is needed. The service verifies RS256 against GitHub's fixed JWKS issuer and pins audience, repository name and numeric ID, main branch, workflow path, event type and token lifetime. Pull requests and other branches cannot run delivery. Native Sites private access currently blocks external scheduler requests before application authentication, as intended until audience approval.
+The GitHub workflow runs approximately every 15 minutes, with GitHub scheduling delays possible. It obtains a short-lived GitHub OIDC token; no repository Actions secret is needed. The service verifies RS256 against GitHub's fixed JWKS issuer and pins audience, repository name and numeric ID, main branch, workflow path, event type and token lifetime. Pull requests and other branches cannot run delivery. The API audience is public; subscription capabilities and scheduler identity verification continue to protect writes and delivery.
 
 ## Consent, data and delivery policy
 
@@ -24,4 +24,4 @@ Payloads contain only `kind: study` or `kind: recall`. The service worker select
 
 Unit tests independently decrypt RFC 8291 aes128gcm messages, verify VAPID signatures, reject forged scheduler identities, check DST/quiet hours, capability authentication, offline deletion, rollback, concurrent deduplication and provider expiry. CI also runs both browser projects and the full real CPU inference gate.
 
-Before activating, require green CI. After activation, dispatch the scheduler and inspect aggregate counts and its final success. Test a real supported device through opt-in, background receipt, deep link and opt-out. Investigate failed jobs; never publish private keys, identity tokens or subscription data in evidence archives. Browser/OS power policy and GitHub cron timing mean reminders are best effort, not precise alarms.
+Require green CI before changes. After deployment, dispatch the scheduler and inspect aggregate counts and its final success. Test a real supported device through opt-in, background receipt, deep link and opt-out. Investigate failed jobs; never publish private keys, identity tokens or subscription data in evidence archives. Browser/OS power policy and GitHub cron timing mean reminders are best effort, not precise alarms.
