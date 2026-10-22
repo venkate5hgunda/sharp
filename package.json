@@ -20,13 +20,17 @@
     "eval:regression": "node scripts/check-evals.mjs --regression-only --full",
     "eval:release": "node scripts/check-evals.mjs --release",
     "eval:cpu": "node scripts/check-evals.mjs --real --cpu --full",
-    "eval:gpu": "node scripts/check-evals.mjs --real --gpu --full"
+    "eval:gpu": "node scripts/check-evals.mjs --real --gpu --full",
+    "build:push": "node scripts/build-push-service.mjs",
+    "format": "prettier --write js/app.js js/application.js js/router.js js/push.js js/theme.js js/coach.js js/session/timing.js js/views js/ui js/content server/push css index.html manifest.json scripts/build-push-service.mjs scripts/run-push-tick.mjs",
+    "check:format": "prettier --check js/app.js js/application.js js/router.js js/push.js js/theme.js js/coach.js js/session/timing.js js/views js/ui js/content server/push css index.html manifest.json scripts/build-push-service.mjs scripts/run-push-tick.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.64.1",
     "esbuild": "0.28.2",
-    "fake-indexeddb": "6.2.6"
+    "fake-indexeddb": "6.2.6",
+    "prettier": "3.6.2"
   },
   "dependencies": {
     "@mlc-ai/web-llm": "0.2.86"

@@ -10,7 +10,7 @@ export const CATALOG = [
     icon: 'hourglass',
     summary: 'Study words now. Recall them later.',
     description: 'Study words now. Recall them later.',
-    timeEstimate: '2–3 mins'
+    timeEstimate: '2–3 mins',
   },
   {
     id: 'pattern-flash',
@@ -20,7 +20,7 @@ export const CATALOG = [
     icon: 'grid',
     summary: 'Remember a pattern. Rebuild it.',
     description: 'Remember a pattern. Rebuild it.',
-    timeEstimate: '3 mins'
+    timeEstimate: '3 mins',
   },
   {
     id: 'math-arithmetic',
@@ -30,7 +30,7 @@ export const CATALOG = [
     icon: 'calculator',
     summary: 'Quick calculations at your level.',
     description: 'Quick calculations at your level.',
-    timeEstimate: '2–3 mins'
+    timeEstimate: '2–3 mins',
   },
   {
     id: 'story-math',
@@ -40,7 +40,7 @@ export const CATALOG = [
     icon: 'book-open',
     summary: 'Solve everyday word problems.',
     description: 'Solve everyday word problems.',
-    timeEstimate: '3–4 mins'
+    timeEstimate: '3–4 mins',
   },
   {
     id: 'logic-deduction',
@@ -50,7 +50,7 @@ export const CATALOG = [
     icon: 'git-commit',
     summary: 'Find what follows from the facts.',
     description: 'Find what follows from the facts.',
-    timeEstimate: '3 mins'
+    timeEstimate: '3 mins',
   },
   {
     id: 'comprehension-inference',
@@ -60,7 +60,7 @@ export const CATALOG = [
     icon: 'file-text',
     summary: 'Read a passage. Find the evidence.',
     description: 'Read a passage. Find the evidence.',
-    timeEstimate: '3 mins'
+    timeEstimate: '3 mins',
   },
   {
     id: 'corsi-span',
@@ -70,8 +70,8 @@ export const CATALOG = [
     icon: 'layers',
     summary: 'Watch the blocks. Repeat the order.',
     description: 'Watch the blocks. Repeat the order.',
-    timeEstimate: '2–3 mins'
-  }
+    timeEstimate: '2–3 mins',
+  },
 ];
 
 export function getGameById(id) {

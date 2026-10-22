@@ -1,50 +1,61 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Sharp — Daily brain practice</title>
-  <meta name="description" content="Progressive cognitive fitness for memory, logic, math, and comprehension puzzles. 100% local and offline with adaptive dynamic difficulty and daily streak tracking.">
-  <meta name="theme-color" content="#f6f7f4">
-  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
-  <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/games.css">
-  <link rel="stylesheet" href="css/engagement.css">
-  <link rel="stylesheet" href="css/interface.css">
-</head>
-<body>
-  <a class="skip-link" href="#appContainer">Skip to main content</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Sharp — Daily brain practice</title>
+    <meta
+      name="description"
+      content="Progressive cognitive fitness for memory, logic, math, and comprehension puzzles. 100% local and offline with adaptive dynamic difficulty and daily streak tracking."
+    />
+    <meta name="theme-color" content="#f6f7f4" />
+    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/views.css" />
+    <link rel="stylesheet" href="css/session.css" />
+    <link rel="stylesheet" href="css/coach.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#appContainer">Skip to main content</a>
 
-  <!-- Header Bar -->
-  <header class="app-header">
-    <a href="#/today" class="brand-anchor" aria-label="Sharp Home">
-      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-      <span class="brand-name">sharp<span aria-hidden="true">.</span></span>
-    </a>
+    <!-- Header Bar -->
+    <header class="app-header">
+      <a href="#/today" class="brand-anchor" aria-label="Sharp Home">
+        <span class="brand-mark" aria-hidden="true">
+          <i></i>
+          <i></i>
+          <i></i>
+          <i></i>
+        </span>
+        <span class="brand-name">sharp</span>
+      </a>
 
-    <nav class="app-nav" aria-label="Main navigation">
-      <a href="#/today" class="nav-link is-active" data-route="today" aria-current="page">Today</a>
-      <a href="#/exercises" class="nav-link" data-route="exercises">Exercises</a>
-      <a href="#/progress" class="nav-link" data-route="progress">Progress</a>
-    </nav>
+      <nav class="app-nav" aria-label="Main navigation">
+        <a href="#/today" class="nav-link is-active" data-route="today" aria-current="page">
+          Today
+        </a>
+        <a href="#/exercises" class="nav-link" data-route="exercises">Exercises</a>
+        <a href="#/progress" class="nav-link" data-route="progress">Progress</a>
+      </nav>
 
-    <div class="header-controls">
-      <a href="#/backup" class="nav-link utility-link" data-route="backup">Backup</a>
-      <a href="#/settings" class="nav-link utility-link" data-route="settings">Settings</a>
-    </div>
-  </header>
+      <div class="header-controls">
+        <a href="#/backup" class="nav-link utility-link" data-route="backup">Backup</a>
+        <a href="#/settings" class="nav-link utility-link" data-route="settings">Settings</a>
+      </div>
+    </header>
 
-  <!-- Navigation Tabs -->
+    <!-- Navigation Tabs -->
 
-  <!-- In-App Notification Banner Container -->
-  <div id="inAppBannerHost" class="in-app-banner-host" aria-live="polite"></div>
+    <!-- In-App Notification Banner Container -->
+    <div id="inAppBannerHost" class="in-app-banner-host" aria-live="polite"></div>
 
-  <!-- Main View Mount Target -->
-  <main id="appContainer" class="main-content" role="main"></main>
+    <!-- Main View Mount Target -->
+    <main id="appContainer" class="main-content" role="main" tabindex="-1"></main>
 
-  <!-- App Bootstrapper -->
-  <script type="module" src="js/app.js"></script>
-</body>
+    <!-- App Bootstrapper -->
+    <script type="module" src="js/app.js"></script>
+  </body>
 </html>

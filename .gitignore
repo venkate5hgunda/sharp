@@ -7,3 +7,5 @@ test-results/
 playwright-report/
 
 .cache/sharp-evals/
+
+.cache/sharp-push/

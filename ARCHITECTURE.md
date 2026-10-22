@@ -1,6 +1,25 @@
 # Sharp architecture
 
-Reviewed: 2026-10-19. This describes the implemented static app; the original [analysis](docs/REDESIGN_IMPLEMENTATION_ANALYSIS.md) records the broader program and its acceptance gates.
+Reviewed: 2026-10-21. This describes the implemented static app; the original [analysis](docs/REDESIGN_IMPLEMENTATION_ANALYSIS.md) records the broader program and its acceptance gates.
+
+## Code ownership
+
+The app uses native browser modules with one production implementation of each screen:
+
+- `js/application.js` composes repository, sessions, reminders and route renderers. It does not contain screen markup.
+- `js/router.js` owns navigation, view disposal, route aliases, focus and the normal/focused shell. Asynchronous route resolution must finish before mounting; stale resolutions cannot replace newer navigation.
+- `js/views/` owns presentation and scoped events. Each stateful view returns a cleanup function. Rendering a new memory or exercise state also releases the previous state's listeners and timers.
+- `js/session/` owns persistent exercise transitions, projections, content selection and question timing. Reading and passage review time are excluded from active answer time.
+- `js/content/` contains the exercise registry, seedable math generators and solvers. Question generation has no dependency on UI modules, audio or persistence.
+- `js/ui/` contains shared presentation helpers. Version suffixes are reserved for persisted formats, rather than duplicate screen implementations.
+
+Legacy storage and backup readers remain for migration and older exports. The old router's separate game screens, modal, notification and celebration implementations have been removed; active screens use the shared session lifecycle and native dialogs.
+
+## Styles
+
+`index.html` loads `styles.css` (tokens, global elements and accessibility), `layout.css` (application shell), `components.css` (shared controls and surfaces), `views.css` (route-specific layouts), `session.css` (focused practice) and `coach.css` (optional coach). Rules live with their owning surface. The redesign's temporary override stylesheet and superseded game stylesheet are removed.
+
+Exercise layout uses dynamic viewport height and internal scroll regions. The question retains space when answer choices are long. Visual boards use the available board container's width and height. Navigation, status banners and the coach are excluded from focused practice.
 
 ## Application and sessions
 
@@ -30,7 +49,7 @@ Replace and merge are one aggregate transaction. A conflict preference selects a
 
 ## Content and projections
 
-`js/session/content.js` normalizes 24 original questions plus 300 foundation questions into stable versioned items. Immutable content is separate from attempt evidence. Selection filters domain, skill and category, then favors balanced skill coverage, low exposure and nearby tiers. It records the actual item tier and selection reason. Stored seeded option order survives reload. Arithmetic, pattern and sequence generators accept reproducible seeds; committed snapshots survive later generator changes.
+`js/session/content.js` normalizes 864 questions and 42 memory sets from the original, foundation and discovery packs into stable, versioned items. Immutable content is separate from attempt evidence. Selection filters domain, skill and category, then favors balanced skill coverage, low exposure and nearby tiers. It records the actual item tier and selection reason. Stored seeded option order survives reload. Arithmetic, pattern and sequence generators accept reproducible seeds; committed snapshots survive later generator changes.
 
 `js/content/solvers.js` checks supported arithmetic, ordering, finite constraints, conditionals and truth-teller models independently. Reading questions use passage evidence and engineering review, not an automated claim of semantic proof. Two original logic errors were corrected with new content versions and solver regressions. [Coverage](docs/CURRICULUM_COVERAGE.md) discloses repetition and review limits.
 
@@ -51,3 +70,14 @@ All flags in `js/core/feature-flags.js` are false, immutable deployment choices.
 A pinned WebLLM provider, dedicated worker and explicit benchmark screen have initial desktop pilot evidence; full device qualification is pending. A build command prepares an isolated temporary pilot without editing release flags. Preparation has a whole-operation deadline; cancellation aborts runtime requests and terminates model workers. Capability checks are advisory and release probe resources. The runtime is absent from the disabled boot path. [Operations](docs/INTELLIGENCE_OPERATIONS.md) documents artifact sources, measured results and activation gates.
 
 The diagnostics broker records allowlisted bounded metadata locally. An optional consent-gated outbox has expiry, a cross-tab lease, retries with backoff/jitter and a 20-event daily attempt budget. Flag-off creates no transport. The manual PostHog mapping uses a public ingestion key only; no SDK autocapture, cookies, replay or persistent player identity. Raw prompt/output sharing is unimplemented and disabled. A developer-machine Langfuse importer defaults to a sanitized dry run; secret keys never enter the app.
+
+
+## Push service
+
+`server/push/worker.js` owns HTTP parsing, CORS and subscription writes. `policy.js` owns registration validation and local-time delivery rules, `crypto.js` owns RFC 8291 encryption and VAPID signing, and `scheduler.js` owns OIDC verification and durable delivery orchestration. The server modules do not import browser presentation code.
+
+Run `npm run build:push` to produce a self-contained Worker module at `.cache/sharp-push/worker.js` for the existing host. Build output stays out of Git. Authentication, quiet hours, encrypted payloads and compare-and-swap daily reservations retain independent unit coverage. [Push operations](docs/PUSH_OPERATIONS.md) describes deployment and the device-verification limits.
+
+## Maintenance checks
+
+`npm run check:format` checks formatting in the active frontend and service layers. CI also checks syntax, push bundling, unit tests, both browser projects, the offline manifest and inference gates. Browser layout coverage includes small portrait screens, landscape, long reading answers, memory study and the largest pattern board. Router tests exercise the production lifecycle, including stale asynchronous resolutions and disposal.

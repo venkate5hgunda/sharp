@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createECDH, hkdfSync, createDecipheriv, createPublicKey, verify } from 'node:crypto';
-import worker, { base64url, bytes, encryptedPush, vapidAuthorization, validateRegistration, due, localClock } from '../server/push/worker.js';
+import worker from '../server/push/worker.js';
+import { base64url, bytes, encryptedPush, vapidAuthorization } from '../server/push/crypto.js';
+import { validateRegistration, due, localClock } from '../server/push/policy.js';
 const origin='https://venkate5hgunda.github.io';
 function fixture(){const ec=createECDH('prime256v1');ec.generateKeys();const auth=crypto.getRandomValues(new Uint8Array(16));return {ec,auth,subscription:{endpoint:'https://fcm.googleapis.com/fcm/send/synthetic-test',keys:{p256dh:ec.getPublicKey().toString('base64url'),auth:base64url(auth)}}};}
 class Bucket {
@@ -54,7 +56,7 @@ test('scheduler requires signed GitHub identity for the exact production workflo
  const {generateKeyPairSync,sign}=await import('node:crypto');const pair=generateKeyPairSync('rsa',{modulusLength:2048});const key={...pair.publicKey.export({format:'jwk'}),kid:'fixture'};
  const now=Date.now(),seconds=Math.floor(now/1000);const claims={iss:'https://token.actions.githubusercontent.com',aud:'https://sharp-push.cheeryowl513.chatgpt.site',repository:'venkate5hgunda/sharp',repository_id:'1425104007',ref:'refs/heads/main',workflow_ref:'venkate5hgunda/sharp/.github/workflows/push-reminders.yml@refs/heads/main',event_name:'schedule',iat:seconds,exp:seconds+300};
  const jwt=(changes={},header={})=>{const h=Buffer.from(JSON.stringify({alg:'RS256',kid:'fixture',...header})).toString('base64url'),p=Buffer.from(JSON.stringify({...claims,...changes})).toString('base64url'),input=h+'.'+p;return input+'.'+sign('RSA-SHA256',Buffer.from(input),pair.privateKey).toString('base64url');};
- const {verifySchedulerJWT}=await import('../server/push/worker.js');assert.equal(await verifySchedulerJWT(jwt(),[key],now),true);
+ const {verifySchedulerJWT}=await import('../server/push/scheduler.js');assert.equal(await verifySchedulerJWT(jwt(),[key],now),true);
  for(const changes of [{aud:'other'},{repository_id:'1'},{ref:'refs/heads/work'},{workflow_ref:'other'},{event_name:'pull_request'},{exp:seconds-1},{iat:seconds-700},{iss:'https://evil.example'}])assert.equal(await verifySchedulerJWT(jwt(changes),[key],now),false);
  assert.equal(await verifySchedulerJWT(jwt({}, {alg:'none'}),[key],now),false);assert.equal(await verifySchedulerJWT(jwt(),[],now),false);assert.equal(await verifySchedulerJWT(jwt().slice(0,-8)+'AAAAAAAA',[key],now),false);
 });

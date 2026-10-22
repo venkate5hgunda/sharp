@@ -69,8 +69,8 @@ test('delayed memory preserves committed study, gates readiness and completes fa
   await expect(page.getByRole('heading', { name: 'Session complete', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'View progress', exact: true }).click(); await page.getByText('Memory recall', { exact: true }).click(); await expect(page.getByText(/recognition · .* hours actual delay · fast-track · unrated/)).toBeVisible();
 });
-test('diagnostics evaluation renders validated and fallback fixtures without optional runtime or external requests', async ({ page }) => {
-  const forbidden = []; page.on('request', (r) => { if (!r.url().startsWith('http://127.0.0.1:8080') || r.url().includes('/optional-runtime/')) forbidden.push(r.url()); });
+test('diagnostics evaluation renders validated and fallback fixtures without optional runtime or external requests', async ({ page, baseURL }) => {
+  const forbidden = []; page.on('request', (r) => { if (!r.url().startsWith(baseURL) || r.url().includes('/optional-runtime/')) forbidden.push(r.url()); });
   await page.goto('/#/diagnostics'); await expect(page.getByRole('button', { name: 'Enable metadata sharing', exact: true })).toBeDisabled(); await checkAccessibility(page);
   await page.getByRole('button', { name: 'Run browser evaluation' }).click(); await expect(page.locator('#evaluationStatus')).toContainText('12 accepted stub outputs');
   await page.getByLabel('Scenario', { exact: true }).selectOption('wrong_answer'); await page.getByRole('button', { name: 'Run browser evaluation' }).click();

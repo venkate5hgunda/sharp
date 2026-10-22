@@ -29,6 +29,8 @@ jobs:
         run: git ls-files -z '*.js' '*.mjs' | xargs -0 -n1 node --check
       - name: Verify pinned optional runtime build
         run: npm run build:inference && git diff --exit-code -- assets/optional-runtime
+      - run: npm run check:format
+      - run: npm run build:push
       - run: npm test
       - run: npm run eval:regression
       - run: npm run check:offline

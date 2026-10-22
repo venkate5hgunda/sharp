@@ -1,78 +1,51 @@
-// Games Catalog View — Explore and Play Individual Cognitive Exercises
-import { CATALOG } from '../games/catalog.js';
-import { audio } from '../audio.js';
-import { getDomainRatings, ratingToTier, getTierLabel, DOMAINS } from '../adaptive-engine.js';
+import { createSessionScope } from '../core/session-scope.js';
+import { escapeHTML as h } from '../content-validation.js';
+import { CATALOG } from '../content/catalog.js';
+import { exerciseIcon } from '../ui/exercise-presentation.js';
 
-export function render(container, navigateTo) {
-  const ratings = getDomainRatings();
-
-  container.innerHTML = `
+export function renderCatalog(container) {
+  const scope = createSessionScope();
+  container.innerHTML = /* HTML */ `
     <div class="view-header">
       <div>
-        <h1 class="view-title">Exercise Catalog</h1>
-        <p class="view-desc">Select any targeted exercise to train specific cognitive skills at your adaptive tier.</p>
-      </div>
-      <div class="domain-filters" id="domainFilters" role="tablist" aria-label="Filter games">
-        <button class="filter-chip is-active" data-filter="all" type="button">All Games</button>
-        <button class="filter-chip" data-filter="${DOMAINS.MEMORY}" type="button">Memory</button>
-        <button class="filter-chip" data-filter="${DOMAINS.MATH}" type="button">Math</button>
-        <button class="filter-chip" data-filter="${DOMAINS.LOGIC}" type="button">Logic</button>
-        <button class="filter-chip" data-filter="${DOMAINS.COMPREHENSION}" type="button">Verbal</button>
-        <button class="filter-chip" data-filter="${DOMAINS.FOCUS}" type="button">Focus</button>
+        <h1 class="view-title">Exercises</h1>
+        <p class="view-desc">Choose something to work on.</p>
       </div>
     </div>
-
-    <div class="games-grid" id="gamesGrid">
-      ${CATALOG.map((game) => {
-        const domainRating = ratings[game.domain] || 1000;
-        const tier = ratingToTier(domainRating);
-        const tierName = getTierLabel(tier);
-
-        return `
-          <div class="game-catalog-card" data-domain="${game.domain}">
-            <div class="card-top">
-              <span class="card-domain-badge">${game.badge}</span>
-              <span class="card-tier-badge" title="Current skill level">Tier ${tier} (${tierName})</span>
-            </div>
-            <h3 class="card-title">${game.title}</h3>
-            <p class="card-summary">${game.summary}</p>
-            <div class="card-bottom">
-              <span class="card-time">⏱️ ${game.timeEstimate}</span>
-              <button class="btn btn-sm btn-primary play-btn" data-game-id="${game.id}" type="button">
-                Train &rarr;
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('')}
+    <div class="domain-filters" role="group" aria-label="Filter exercises">
+      ${[
+        ['all', 'All'],
+        ['focus', 'Patterns'],
+        ['memory', 'Memory'],
+        ['math', 'Math'],
+        ['logic', 'Logic'],
+        ['comprehension', 'Reading'],
+      ]
+        .map(
+          ([id, label]) =>
+            `<button class="filter-chip ${id === 'all' ? 'is-active' : ''}" data-filter="${id}" aria-pressed="${id === 'all'}">${label}</button>`
+        )
+        .join('')}
+    </div>
+    <div class="exercise-grid">
+      ${CATALOG.map(
+        (g) =>
+          `<a class="exercise-card" data-domain="${g.domain}" href="#/games/${g.id}"><span class="exercise-icon" aria-hidden="true">${exerciseIcon(g.id)}</span><span class="exercise-card-copy"><h2>${h(g.title)}</h2><p>${h(g.summary)}</p><small>${h(g.timeEstimate.replace('mins', 'min'))}</small></span><span class="card-arrow" aria-hidden="true">→</span></a>`
+      ).join('')}
     </div>
   `;
-
-  const filterChips = container.querySelectorAll('.filter-chip');
-  const cards = container.querySelectorAll('.game-catalog-card');
-
-  filterChips.forEach((chip) => {
-    chip.addEventListener('click', () => {
-      audio.tap();
-      filterChips.forEach((c) => c.classList.remove('is-active'));
-      chip.classList.add('is-active');
-
-      const filter = chip.dataset.filter;
-      cards.forEach((card) => {
-        if (filter === 'all' || card.dataset.domain === filter) {
-          card.removeAttribute('hidden');
-        } else {
-          card.setAttribute('hidden', '');
-        }
+  container.querySelectorAll('[data-filter]').forEach((button) =>
+    scope.listen(button, 'click', () => {
+      container.querySelectorAll('[data-filter]').forEach((b) => {
+        const active = b === button;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-pressed', String(active));
       });
-    });
-  });
-
-  container.querySelectorAll('.play-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      audio.tap();
-      const gameId = btn.dataset.gameId;
-      navigateTo(`games/${gameId}`);
-    });
-  });
+      container.querySelectorAll('[data-domain]').forEach((card) => {
+        card.hidden =
+          button.dataset.filter !== 'all' && card.dataset.domain !== button.dataset.filter;
+      });
+    })
+  );
+  return scope.dispose;
 }

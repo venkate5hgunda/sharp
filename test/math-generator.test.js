@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateArithmeticProblem, generateStoryProblem } from '../js/games/math-challenge.js';
+import { generateArithmeticProblem, generateStoryProblem } from '../js/content/math-generator.js';
 
 test('generateArithmeticProblem generates solvable problem with 4 unique options', () => {
   const config = {

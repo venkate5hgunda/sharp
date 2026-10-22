@@ -29,6 +29,8 @@ After changing JS, CSS, datasets, assets or the worker, regenerate the offline m
 ```sh
 npm run build:offline
 npm run check:offline
+npm run check:format
+npm run build:push
 npm test
 ```
 
@@ -48,6 +50,8 @@ npm run test:browser
 ```
 
 See [architecture](ARCHITECTURE.md), [implementation status](docs/IMPLEMENTATION_PROGRESS.md) and [release verification](docs/IMPLEMENTATION_VERIFICATION.md). Third-party bundled runtime notices remain in the generated files. Project code is MIT licensed.
+
+The frontend and reminder service have separate, documented module boundaries. `npm run format` formats the active UI and service code; CI runs `npm run check:format`. Build the reminder Worker with `npm run build:push`. See [architecture](ARCHITECTURE.md) for code ownership and lifecycle rules.
 
 ## Interface
 

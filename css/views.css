@@ -1,0 +1,373 @@
+/* Home, exercise selection, preferences and progress. */
+.domain-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.filter-chip {
+  padding: 9px 17px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: 0.15s;
+  min-height: 44px;
+}
+.filter-chip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.filter-chip:active {
+  transform: scale(0.95);
+}
+.filter-chip.is-active {
+  background: var(--primary);
+  color: rgb(255, 255, 255);
+  border-color: var(--primary);
+}
+.daily-card {
+  padding: 36px 40px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.daily-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.8rem;
+}
+.daily-card h2 {
+  font-size: clamp(2.15rem, 5vw, 3.35rem);
+  font-weight: 500;
+  letter-spacing: -0.055em;
+  line-height: 1.13;
+  margin: 28px 0px 14px;
+}
+.daily-description {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.daily-skills {
+  display: flex;
+  list-style: none;
+  gap: 28px;
+  margin: 30px 0px;
+  padding: 0px;
+}
+.daily-skills li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.85rem;
+}
+.daily-skills .exercise-icon {
+  width: 35px;
+  height: 35px;
+  border-radius: 9px;
+}
+.daily-skills svg {
+  width: 21px;
+  height: 21px;
+}
+.daily-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.daily-actions .btn {
+  min-width: 190px;
+  justify-content: space-between;
+}
+.week-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin: 24px 0px 12px;
+  padding: 18px 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.week-strip h2 {
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+.week-strip p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 5px;
+}
+.week-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  list-style: none;
+  gap: 16px;
+  padding: 0px;
+}
+.week-days li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+.week-days small {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+.week-days li > span:not(.sr-only) {
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 5px solid var(--bg);
+}
+.week-days .is-today > span:not(.sr-only) {
+  outline: 1px solid var(--primary);
+  outline-offset: 2px;
+}
+.week-days .is-earned > span:not(.sr-only) {
+  background: var(--primary);
+  border: 0px;
+  color: rgb(255, 255, 255);
+}
+.browse-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.85rem;
+  min-height: 52px;
+}
+.browse-link strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.browse-link:hover strong {
+  text-decoration: underline;
+}
+.resume-card {
+  margin-bottom: 20px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-tint);
+}
+.resume-card a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 22px;
+  text-decoration: none;
+  color: var(--text);
+}
+.resume-card small {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.resume-card strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.exercise-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.exercise-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.exercise-card:hover {
+  border-color: var(--primary);
+  background: var(--surface-strong);
+}
+.exercise-card h2 {
+  font-size: 1.05rem;
+  padding-right: 10px;
+  letter-spacing: -0.025em;
+}
+.exercise-card p {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 8px 0px 18px;
+  line-height: 1.6;
+}
+.exercise-card small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.card-arrow {
+  position: absolute;
+  top: 22px;
+  right: 18px;
+  color: var(--muted);
+}
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.exercise-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 520px;
+  margin: 26px auto 0px;
+  padding: 38px;
+  text-align: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+.exercise-setup .exercise-icon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 22px;
+}
+.setup-time {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 15px 0px 28px;
+}
+.exercise-setup > .btn {
+  width: 100%;
+  justify-content: space-between;
+}
+.exercise-setup .practice-toggle {
+  margin-top: 12px;
+}
+.exercise-options {
+  width: 100%;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  text-align: left;
+  font-size: 0.85rem;
+}
+.exercise-options summary {
+  text-align: center;
+  color: var(--muted);
+}
+[data-view='progress'] > .workout-card {
+  padding: 32px;
+  margin-top: 24px;
+}
+[data-view='progress'] > .workout-card p {
+  margin-top: 12px;
+  color: var(--muted);
+}
+[data-view='games'] .workout-card {
+  margin-top: 24px;
+}
+[data-view='games'] .workout-card p {
+  margin-block: 12px;
+  color: var(--muted);
+}
+[data-view='progress'] > .workout-card .btn {
+  margin-top: 22px;
+}
+.preference-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0px;
+  border-bottom: 1px solid var(--border);
+}
+.preference-row:last-child {
+  border-bottom: 0px;
+}
+.preference-row input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+@media (max-width: 700px) {
+  .daily-card {
+    padding: 26px;
+  }
+  .daily-skills {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .daily-skills li {
+    flex: 1 0 37%;
+  }
+  .daily-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .daily-actions .btn {
+    justify-content: center;
+    gap: 28px;
+  }
+  .week-strip {
+    gap: 18px;
+    padding: 20px;
+    flex-wrap: wrap;
+  }
+  .week-strip > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .week-strip p {
+    margin: 0px;
+  }
+  .week-days {
+    width: 100%;
+    gap: 5px;
+  }
+  .exercise-grid {
+    grid-template-columns: 1fr;
+  }
+  .exercise-card {
+    padding: 22px;
+  }
+  .exercise-card p {
+    margin-bottom: 10px;
+  }
+  .exercise-setup {
+    padding: 30px 24px;
+  }
+  .domain-filters {
+    gap: 6px;
+  }
+  .filter-chip {
+    font-size: 0.8rem;
+    padding-inline: 13px;
+  }
+}

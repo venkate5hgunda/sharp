@@ -4,7 +4,7 @@ The public app runs at https://venkate5hgunda.github.io/sharp/. The push API is 
 
 ## Architecture and activation
 
-`server/push/worker.js` is the canonical service source, mirrored into the Sites source repository for project `appgprj_6ad90bd1ed848191b14d387af7b429d2`. It runs as a Worker with durable R2 binding `BUCKET`. Hosting secrets contain `VAPID_PRIVATE_JWK` and an emergency `SCHEDULER_SECRET`; only `VAPID_PUBLIC_KEY` is public. Never rotate the VAPID identity casually: existing browser subscriptions bind to it.
+`server/push/worker.js` is the HTTP entrypoint; policy, cryptography and delivery live in adjacent modules. Run `npm run build:push` and mirror the resulting `.cache/sharp-push/worker.js` bundle into the Sites source repository for project `appgprj_6ad90bd1ed848191b14d387af7b429d2`. It runs as a Worker with durable R2 binding `BUCKET`. Hosting secrets contain `VAPID_PRIVATE_JWK` and an emergency `SCHEDULER_SECRET`; only `VAPID_PUBLIC_KEY` is public. Never rotate the VAPID identity casually: existing browser subscriptions bind to it.
 
 The production identity was verified by successful manual run [39686614973](https://github.com/venkate5hgunda/sharp/actions/runs/39686614973). The scheduled workflow is enabled. Remaining device verification: opt in on a real device and verify receipt with the app closed, click destination and opt-out. iOS requires a compatible installed home-screen web app. Calendar export remains available.
 

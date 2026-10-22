@@ -1,119 +1,98 @@
-// Router for Sharp — Hash-based SPA Navigation with Lifecycle Cleanup
-import * as WorkoutView from './views/workout-view.js';
-import * as CatalogView from './views/catalog-view.js';
-import * as AnalyticsView from './views/analytics-view.js';
-import * as BackupView from './views/backup-view.js';
-import * as SettingsView from './views/settings-view.js';
+// One lifecycle for all routes. Resolve asynchronous dependencies before mounting a view.
+const ALIASES = { workout: 'today', catalog: 'exercises', analytics: 'progress' };
+const noop = () => {};
 
-import * as DelayedMemoryGame from './games/delayed-memory.js';
-import * as PatternFlashGame from './games/pattern-flash.js';
-import * as MathChallengeGame from './games/math-challenge.js';
-import * as LogicDeductionGame from './games/logic-deduction.js';
-import * as ComprehensionGame from './games/comprehension-inference.js';
-import * as CorsiSpanGame from './games/corsi-span.js';
-
-const GAME_MODULES = {
-  'delayed-memory': DelayedMemoryGame,
-  'pattern-flash': PatternFlashGame,
-  'math-arithmetic': {
-    render: (el, onDone) => MathChallengeGame.renderArithmetic(el, onDone)
-  },
-  'story-math': {
-    render: (el, onDone) => MathChallengeGame.renderStoryMath(el, onDone)
-  },
-  'logic-deduction': LogicDeductionGame,
-  'comprehension-inference': ComprehensionGame,
-  'corsi-span': CorsiSpanGame
-};
+export function parseRoute(hash = '') {
+  const [raw = 'today', param] = hash.replace(/^#\/?/, '').split('/');
+  const path = ALIASES[raw] || raw || 'today';
+  return {
+    path,
+    param,
+    alias: Boolean(ALIASES[raw]),
+    focused: path === 'session' || (path === 'games' && param === 'delayed-memory'),
+  };
+}
 
 export class SharpRouter {
-  constructor(appContainer) {
-    this.container = appContainer;
-    this.currentRoute = null;
-    this.activeCleanup = null;
+  constructor(
+    container,
+    {
+      resolve,
+      beforeRoute = noop,
+      onRoute = noop,
+      onError = noop,
+      browser = globalThis.window,
+      document = globalThis.document,
+    }
+  ) {
+    this.container = container;
+    this.resolve = resolve;
+    this.beforeRoute = beforeRoute;
+    this.onRoute = onRoute;
+    this.onError = onError;
+    this.browser = browser;
+    this.document = document;
+    this.activeCleanup = noop;
+    this.version = 0;
+    this.disposed = false;
+    this.handleHashChange = () => this.render().catch(onError);
   }
 
   init() {
-    window.addEventListener('hashchange', () => this.handleHashChange());
-    this.handleHashChange();
+    this.browser.addEventListener('hashchange', this.handleHashChange);
+    return this.render();
   }
 
   navigateTo(path) {
-    window.location.hash = `#/${path.replace(/^#?\/?/, '')}`;
+    this.browser.location.hash = `#/${path.replace(/^#?\/?/, '')}`;
   }
 
-  handleHashChange() {
-    const rawHash = window.location.hash.slice(2); // Strip '#/'
-    const [route, param] = rawHash.split('/');
-    const effectiveRoute = route || 'workout';
-
-    // Update navigation active states
-    document.querySelectorAll('.nav-link').forEach((link) => {
-      const target = link.dataset.route;
-      const isActive = target === effectiveRoute || (effectiveRoute === 'games' && target === 'catalog');
-      link.classList.toggle('is-active', isActive);
-      link.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
-
-    // Cleanup previous view if needed
-    if (typeof this.activeCleanup === 'function') {
-      try {
-        this.activeCleanup();
-      } catch (err) {
-        console.warn('Error during route cleanup:', err);
-      }
-      this.activeCleanup = null;
+  async render() {
+    const version = ++this.version;
+    const cleanup = this.activeCleanup;
+    this.activeCleanup = noop;
+    cleanup();
+    const route = parseRoute(this.browser.location.hash);
+    await this.beforeRoute(route);
+    if (this.disposed || version !== this.version) return;
+    const mount = await this.resolve(route);
+    if (this.disposed || version !== this.version) return;
+    if (!mount) {
+      this.navigateTo('today');
+      return;
     }
-
-    this.container.innerHTML = '';
-    window.scrollTo({ top: 0, behavior: 'instant' });
-
-    if (effectiveRoute === 'workout') {
-      this.activeCleanup = WorkoutView.render(this.container, (path) => this.navigateTo(path));
-    } else if (effectiveRoute === 'catalog') {
-      this.activeCleanup = CatalogView.render(this.container, (path) => this.navigateTo(path));
-    } else if (effectiveRoute === 'games' && param) {
-      this.mountGame(param);
-    } else if (effectiveRoute === 'analytics') {
-      this.activeCleanup = AnalyticsView.render(this.container);
-    } else if (effectiveRoute === 'backup') {
-      this.activeCleanup = BackupView.render(this.container);
-    } else if (effectiveRoute === 'settings') {
-      this.activeCleanup = SettingsView.render(this.container);
-    } else {
-      this.navigateTo('workout');
-    }
-    const heading = this.container.querySelector('h1, h2');
+    if (route.alias) this.browser.history.replaceState(null, '', `#/${route.path}`);
+    this.updateShell(route);
+    this.activeCleanup = mount() || noop;
+    const heading = this.container.querySelector('h1');
     if (heading) {
       heading.tabIndex = -1;
       heading.focus({ preventScroll: true });
     }
+    this.onRoute(route);
   }
 
-  mountGame(gameId) {
-    const module = GAME_MODULES[gameId];
-    if (!module) {
-      this.navigateTo('catalog');
-      return;
-    }
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'game-route-wrapper';
-    wrapper.innerHTML = `
-      <div class="game-nav-bar">
-        <button id="backToCatalogBtn" class="btn btn-sm btn-outline" type="button">
-          &larr; Back to Catalog
-        </button>
-      </div>
-      <div id="gameMountTarget"></div>
-    `;
-    this.container.appendChild(wrapper);
-
-    wrapper.querySelector('#backToCatalogBtn').addEventListener('click', () => {
-      this.navigateTo('catalog');
+  updateShell({ path, focused }) {
+    this.document.querySelectorAll('.nav-link').forEach((link) => {
+      const active =
+        link.dataset.route === path ||
+        (path === 'session' && link.dataset.route === 'today') ||
+        (path === 'games' && link.dataset.route === 'exercises');
+      link.classList.toggle('is-active', active);
+      if (active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
     });
+    this.document.body.classList.toggle('is-training', focused);
+    this.container.dataset.view = path;
+    this.browser.scrollTo({ top: 0, behavior: 'instant' });
+  }
 
-    const target = wrapper.querySelector('#gameMountTarget');
-    this.activeCleanup = module.render(target, () => this.navigateTo('catalog'));
+  dispose() {
+    this.disposed = true;
+    ++this.version;
+    this.browser.removeEventListener('hashchange', this.handleHashChange);
+    const cleanup = this.activeCleanup;
+    this.activeCleanup = noop;
+    cleanup();
   }
 }

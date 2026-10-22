@@ -1,7 +1,5 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import vm from 'node:vm';
-import { readFileSync } from 'node:fs';
 import { createSessionScope, bindChoiceShortcuts } from '../js/core/session-scope.js';
 
 function fakeClock() {
@@ -75,45 +73,57 @@ test('choice shortcuts survive unrelated keys and ignore editing, modifiers and 
   scope.dispose();
 });
 
-test('route-away releases a mounted game and workout child before callbacks can commit', () => {
-  // Run the real router with view dependencies supplied by the test harness.
-  // This isolates ownership/route behavior without adding a DOM framework to production.
-  const clock = fakeClock();
-  const keyboard = new EventTarget();
-  let writes = 0;
-  let disposed = 0;
-  const mount = () => {
+function routerEnvironment(hash = '#/today') {
+  const browser = Object.assign(new EventTarget(), { location: { hash }, history: { replaceState() {} }, scrollTo() {} });
+  const document = { querySelectorAll: () => [], body: { classList: { toggle() {} } } };
+  const container = { dataset: {}, querySelector: () => null };
+  return { browser, document, container };
+}
+
+test('the production router releases each mounted view before callbacks can commit', async () => {
+  const { SharpRouter } = await import('../js/router.js');
+  const clock = fakeClock(), keyboard = new EventTarget(), env = routerEnvironment();
+  let writes = 0, disposed = 0;
+  const router = new SharpRouter(env.container, { ...env, resolve: async () => () => {
     const scope = createSessionScope(clock);
     scope.timeout(() => writes++, 100);
     scope.listen(keyboard, 'keydown', () => writes++);
     return () => { disposed++; scope.dispose(); };
-  };
-  const target = {};
-  const back = { addEventListener() {} };
-  const wrapper = { querySelector: (selector) => selector === '#gameMountTarget' ? target : back };
-  const container = { innerHTML: '', appendChild() {}, querySelector: () => null };
-  const source = readFileSync(new URL('../js/router.js', import.meta.url), 'utf8')
-    .replace(/^import .*;\n/gm, '').replace('export class SharpRouter', 'class SharpRouter');
-  const view = { render() {} };
-  const game = { render: mount, renderArithmetic: mount, renderStoryMath: mount };
-  const context = vm.createContext({ console,
-    window: { location: { hash: '#/games/logic-deduction' }, scrollTo() {} },
-    document: { querySelectorAll: () => [], createElement: () => wrapper },
-    WorkoutView: { render: mount }, CatalogView: view, AnalyticsView: view, BackupView: view, SettingsView: view,
-    DelayedMemoryGame: game, PatternFlashGame: game, MathChallengeGame: game,
-    LogicDeductionGame: game, ComprehensionGame: game, CorsiSpanGame: game
-  });
-  const Router = vm.runInContext(`${source}\nSharpRouter`, context);
-  const router = new Router(container);
-  for (const route of ['#/games/logic-deduction', '#/games/math-arithmetic', '#/games/story-math', '#/workout']) {
-    context.window.location.hash = route;
-    router.handleHashChange();
-    assert.equal(typeof router.activeCleanup, 'function');
-    context.window.location.hash = '#/catalog';
-    router.handleHashChange();
-    clock.run();
-    key(keyboard, '1');
+  } });
+  await router.init();
+  for (const route of ['#/games/logic-deduction', '#/games/math-arithmetic', '#/session/saved']) {
+    env.browser.location.hash = route;
+    await router.render();
   }
+  router.dispose();
+  clock.run(); key(keyboard, '1');
   assert.equal(disposed, 4);
   assert.equal(writes, 0);
+});
+
+test('a slow route resolver cannot overwrite newer navigation or mount after disposal', async () => {
+  const { SharpRouter } = await import('../js/router.js');
+  const env = routerEnvironment('#/model'), mounted = [];
+  let release;
+  const pending = new Promise((resolve) => { release = resolve; });
+  const router = new SharpRouter(env.container, { ...env, resolve: async ({ path }) => {
+    if (path === 'model') await pending;
+    return () => { mounted.push(path); };
+  } });
+  const first = router.init();
+  await Promise.resolve();
+  env.browser.location.hash = '#/today'; await router.render();
+  release(); await first;
+  assert.deepEqual(mounted, ['today']);
+  router.dispose();
+  await router.render();
+  assert.deepEqual(mounted, ['today']);
+});
+
+test('legacy route aliases keep one canonical navigation and focus policy', async () => {
+  const { parseRoute } = await import('../js/router.js');
+  assert.deepEqual(parseRoute('#/catalog'), { path: 'exercises', param: undefined, alias: true, focused: false });
+  assert.equal(parseRoute('#/session/saved').focused, true);
+  assert.equal(parseRoute('#/games/delayed-memory').focused, true);
+  assert.equal(parseRoute('#/games/logic-deduction').focused, false);
 });

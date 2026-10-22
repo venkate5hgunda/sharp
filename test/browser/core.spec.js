@@ -3,8 +3,8 @@ import AxeBuilder from '@axe-core/playwright';
 async function start(page, game = 'math-arithmetic') {
   await page.goto(`/#/games/${game}`); await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
 }
-test('quiz feedback survives reload, completion appears once, and flag-off boot has no external requests', async ({ page }) => {
-  const external = []; page.on('request', (r) => { if (!r.url().startsWith('http://127.0.0.1:8080') && !r.url().startsWith('data:')) external.push(r.url()); });
+test('quiz feedback survives reload, completion appears once, and flag-off boot has no external requests', async ({ page, baseURL }) => {
+  const external = []; page.on('request', (r) => { if (!r.url().startsWith(baseURL) && !r.url().startsWith('data:')) external.push(r.url()); });
   await start(page); await page.locator('[data-val]').first().click(); await expect(page.getByRole('button', { name: 'Next question', exact: true })).toBeVisible();
   const feedback = await page.locator('#sessionStage').innerText(); await page.reload();
   await expect(page.locator('#sessionStage')).toHaveText(feedback, { useInnerText: true });
@@ -31,6 +31,10 @@ test('accessible primary routes, native confirmation and narrow-screen reflow', 
     expect(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }))).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
+  await page.locator('.skip-link').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('main')).toBeFocused();
+  await expect(page).toHaveURL(/#\/settings$/);
   await page.getByText('Advanced', { exact: true }).click();
   await page.getByRole('button', { name: 'Reset this browser' }).click(); await expect(page.getByRole('dialog')).toBeVisible();
   await page.keyboard.press('Escape'); await expect(page.getByRole('dialog')).toBeHidden(); await expect(page.getByRole('button', { name: 'Reset this browser' })).toBeFocused();

@@ -5,7 +5,9 @@ const THEME_KEY = 'theme_preference';
 const THEME_COLOR_META = 'meta[name="theme-color"]';
 
 export function getSystemTheme() {
-  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light';
 }
 
 export function getStoredTheme() {
@@ -67,5 +69,4 @@ export function initTheme() {
       }
     });
   }
-
 }

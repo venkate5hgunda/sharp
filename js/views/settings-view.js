@@ -1,168 +1,226 @@
-// Settings View — Audio, Haptics, Theme, Schedules & Preferences
-import { loadJSON, saveJSON, clearAllSharpData, KEYS } from '../storage.js';
+import {
+  enableBrowserAlerts,
+  showBrowserReminder,
+  subscribePush,
+  pushAvailable,
+  disableAlerts,
+  syncPushState,
+} from '../push.js';
+import { createSessionScope } from '../core/session-scope.js';
+import { confirmAction } from '../core/dialog.js';
+import { reminderCalendar } from '../core/reminders.js';
+import { emptyState } from '../persistence/repository.js';
+import { escapeHTML as h } from '../content-validation.js';
 import { audio } from '../audio.js';
 import { haptics } from '../haptics.js';
-import { setTheme, getStoredTheme } from '../theme.js';
-import { notifications } from '../notifications.js';
-
-export function render(container) {
-  const prefs = loadJSON(KEYS.PREFERENCES, {});
-  const currentTheme = getStoredTheme();
-  const notifState = notifications.getPermissionState();
-
-  container.innerHTML = `
-    <div class="view-header">
-      <div>
-        <h1 class="view-title">Settings &amp; Preferences</h1>
-        <p class="view-desc">Configure sound, haptics, theme, and daily notification schedules.</p>
-      </div>
-    </div>
-
+import { setTheme } from '../theme.js';
+import { FEATURES } from '../core/feature-flags.js';
+export function renderSettings(container, repo) {
+  const scope = createSessionScope(),
+    p = repo.snapshot().preferences;
+  container.innerHTML = /* HTML */ `
+    <div class="view-header"><h1 class="view-title">Settings</h1></div>
+    <p id="settingsStatus" role="status"></p>
     <div class="settings-card">
-      <h3 class="settings-group-title">Sensory &amp; Interface</h3>
-
-      <div class="setting-row">
-        <div>
-          <strong>Sound Effects</strong>
-          <small class="text-muted">Synthesized Web Audio clicks, chimes, and cues</small>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="soundToggleInput" ${prefs.sound !== false ? 'checked' : ''}>
-          <span class="slider"></span>
-        </label>
+      <h2>Appearance &amp; sound</h2>
+      <div class="preference-row">
+        <label for="themePreference">Theme</label>
+        <select id="themePreference">
+          ${[
+            ['auto', 'System'],
+            ['light', 'Light'],
+            ['dark', 'Dark'],
+          ]
+            .map(
+              ([value, label]) =>
+                `<option value="${value}" ${value === (p.theme || 'auto') ? 'selected' : ''}>${label}</option>`
+            )
+            .join('')}
+        </select>
       </div>
-
-      <div class="setting-row">
-        <div>
-          <strong>Haptic Feedback</strong>
-          <small class="text-muted">Vibration feedback on mobile touch gestures</small>
-        </div>
-        <label class="switch">
-          <input type="checkbox" id="hapticsToggleInput" ${prefs.haptics !== false ? 'checked' : ''}>
-          <span class="slider"></span>
-        </label>
+      <div class="preference-row">
+        <label for="soundPreference">Sound effects</label>
+        <input id="soundPreference" type="checkbox" ${p.sound !== false ? 'checked' : ''} />
       </div>
-
-      <div class="setting-row">
-        <div>
-          <strong>Theme Preference</strong>
-          <small class="text-muted">Light, dark, or automatic system match</small>
-        </div>
-        <div class="theme-select-group" id="themeGroup">
-          <button class="btn btn-sm ${currentTheme === 'auto' ? 'btn-primary' : 'btn-outline'}" data-theme-val="auto" type="button">Auto</button>
-          <button class="btn btn-sm ${currentTheme === 'light' ? 'btn-primary' : 'btn-outline'}" data-theme-val="light" type="button">Light</button>
-          <button class="btn btn-sm ${currentTheme === 'dark' ? 'btn-primary' : 'btn-outline'}" data-theme-val="dark" type="button">Dark</button>
-        </div>
+      <div class="preference-row">
+        <label for="hapticsPreference">Vibration</label>
+        <input id="hapticsPreference" type="checkbox" ${p.haptics !== false ? 'checked' : ''} />
       </div>
     </div>
-
+    <details class="settings-card">
+      <summary>Reminders</summary>
+      <p>Choose when to study and recall.</p>
+      <div class="preference-row">
+        <label for="morningTime">Study time</label>
+        <input id="morningTime" type="time" value="${h(p.morningTime || '08:30')}" />
+      </div>
+      <div class="preference-row">
+        <label for="eveningTime">Recall time</label>
+        <input id="eveningTime" type="time" value="${h(p.eveningTime || '19:30')}" />
+      </div>
+      <p>Calendar reminders work even when Sharp is closed.</p>
+      <button id="calendarExport" class="btn btn-primary">Download calendar reminders</button>
+      <div class="preference-row">
+        <label for="foregroundReminders">Remind me while Sharp is open</label>
+        <input id="foregroundReminders" type="checkbox" ${p.foregroundReminders ? 'checked' : ''} />
+      </div>
+      <p id="alertStatus" role="status">
+        Browser alerts are ${p.browserAlerts ? 'on' : 'off'}. Sharp needs to be open.
+      </p>
+      <button id="enableAlerts" class="btn btn-outline">Enable browser alerts</button>
+      <button id="previewAlert" class="btn btn-outline">Preview reminder</button>
+      <button id="disableAlerts" class="btn btn-outline">Turn alerts off</button>
+    </details>
     <div class="settings-card">
-      <h3 class="settings-group-title">Notifications &amp; Daily Schedule</h3>
-      
-      <div class="setting-row">
-        <div>
-          <strong>Web Notifications</strong>
-          <small class="text-muted">Permission status: <strong>${notifState}</strong></small>
-        </div>
-        <div>
-          ${notifState !== 'granted' ? `
-            <button id="requestNotifBtn" class="btn btn-sm btn-primary" type="button">
-              Enable Notifications
-            </button>
-          ` : `
-            <span class="text-green font-semibold">✓ Enabled</span>
-          `}
-        </div>
-      </div>
-
-      <div class="setting-row">
-        <div>
-          <strong>Morning Memory Drop Time</strong>
-          <small class="text-muted">Notification when daily items are ready to commit</small>
-        </div>
-        <input type="time" id="morningTime" class="time-input" value="${prefs.morningTime || '08:30'}">
-      </div>
-
-      <div class="setting-row">
-        <div>
-          <strong>Evening Recall Test Time</strong>
-          <small class="text-muted">Reminder to test your retention before bed</small>
-        </div>
-        <input type="time" id="eveningTime" class="time-input" value="${prefs.eveningTime || '19:30'}">
-      </div>
+      <h2>Your data</h2>
+      <p>Your progress stays on this device.</p>
+      <a class="btn btn-primary" href="#/backup">Back up or restore</a>
+      <button id="persistStorage" class="btn btn-outline">Protect saved progress</button>
+      <p id="storageStatus" role="status"></p>
     </div>
-
-    <div class="settings-card is-danger-zone">
-      <h3 class="settings-group-title text-amber">Data Reset</h3>
-      <div class="setting-row">
-        <div>
-          <strong>Reset All Local Progress</strong>
-          <small class="text-muted">Clears all ratings, history, and streaks from this browser.</small>
-        </div>
-        <button id="clearDataBtn" class="btn btn-sm btn-danger" type="button">
-          Reset Data
-        </button>
+    <details class="settings-card">
+      <summary>Advanced</summary>
+      <h2>Background alerts</h2>
+      <div class="preference-row">
+        <label for="pushTime">Daily reminder time</label>
+        <input
+          id="pushTime"
+          type="time"
+          min="08:00"
+          max="20:59"
+          value="${h(p.pushTime || '08:30')}"
+        />
       </div>
-    </div>
+      <p>
+        ${pushAvailable()
+          ? 'At most one reminder a day, between 08:00 and 21:00. Works when Sharp is closed.'
+          : 'Unavailable on this version of Sharp. Use calendar reminders instead.'}
+      </p>
+      <p>
+        The reminder service stores your subscription, timezone, reminder time, completion date and
+        recall time. Answers and scores stay on this device.
+      </p>
+      <button id="subscribePush" class="btn btn-outline" ${pushAvailable() ? '' : 'disabled'}>
+        Enable background push
+      </button>
+      <h2>Privacy</h2>
+      <p>
+        On-device AI: ${FEATURES.browserInference ? 'on' : 'off'}. Developer sharing:
+        ${FEATURES.remoteDeveloperTelemetry ? 'on' : 'off'}.
+      </p>
+      <a class="btn btn-outline" href="#/diagnostics">Developer tools</a>
+      <h2>Reset progress</h2>
+      <p>Deletes progress on this device. Back up first.</p>
+      <button id="resetProgress" class="btn btn-danger">Reset this browser</button>
+    </details>
   `;
-
-  // Bind Sound Toggle
-  container.querySelector('#soundToggleInput').addEventListener('change', (e) => {
-    audio.setEnabled(e.target.checked);
-    if (e.target.checked) audio.chime();
-  });
-
-  // Bind Haptics Toggle
-  container.querySelector('#hapticsToggleInput').addEventListener('change', (e) => {
-    haptics.setEnabled(e.target.checked);
-    if (e.target.checked) haptics.success();
-  });
-
-  // Bind Theme Selection
-  container.querySelectorAll('#themeGroup button').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      audio.tap();
-      const val = btn.dataset.themeVal;
-      setTheme(val);
-      render(container);
+  const status = container.querySelector('#settingsStatus');
+  const alertStatus = container.querySelector('#alertStatus');
+  for (const [id, action, message] of [
+    [
+      'enableAlerts',
+      () => enableBrowserAlerts(repo),
+      'Browser alerts enabled. Sharp must be open for scheduled checks.',
+    ],
+    [
+      'previewAlert',
+      async () => {
+        if (
+          !(await showBrowserReminder(
+            repo.snapshot().preferences,
+            {
+              text: 'A tiny brain adventure is ready. Bring your curiosity; Pip will bring the sparkles.',
+              route: 'today',
+            },
+            { preview: true }
+          ))
+        )
+          throw new Error('Enable browser alerts first and wait for offline setup to finish.');
+      },
+      'Preview sent.',
+    ],
+    ['subscribePush', () => subscribePush(repo), 'Background push subscribed.'],
+    ['disableAlerts', () => disableAlerts(repo), 'Browser alerts and background push are off.'],
+  ])
+    scope.listen(container.querySelector('#' + id), 'click', async () => {
+      try {
+        await action();
+        if (scope.active) alertStatus.textContent = message;
+      } catch (e) {
+        if (scope.active) alertStatus.textContent = e.message;
+      }
     });
-  });
-
-  // Bind Notification Request
-  container.querySelector('#requestNotifBtn')?.addEventListener('click', async () => {
-    audio.tap();
-    const result = await notifications.requestPermission();
-    if (result === 'granted') {
-      audio.chime();
-      notifications.notify({
-        title: 'Sharp Notifications Active!',
-        body: 'You will receive reminders for morning drops and evening recall sessions.'
-      });
+  const run = async (action) => {
+    try {
+      await action();
+      if (scope.active) status.textContent = 'Saved.';
+    } catch (e) {
+      if (scope.active) status.textContent = e.message;
     }
-    render(container);
+  };
+  for (const [id, key] of [
+    ['soundPreference', 'sound'],
+    ['hapticsPreference', 'haptics'],
+    ['foregroundReminders', 'foregroundReminders'],
+    ['pushTime', 'pushTime'],
+    ['morningTime', 'morningTime'],
+    ['eveningTime', 'eveningTime'],
+    ['themePreference', 'theme'],
+  ]) {
+    scope.listen(container.querySelector(`#${id}`), 'change', (event) =>
+      run(async () => {
+        const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
+        await repo.setPreferences({ [key]: value });
+        if (key === 'pushTime') await syncPushState(repo);
+        if (key === 'sound') audio.setEnabled(value);
+        if (key === 'haptics') haptics.setEnabled(value);
+        if (key === 'theme') setTheme(value);
+      })
+    );
+  }
+  scope.listen(container.querySelector('#calendarExport'), 'click', () => {
+    const url = URL.createObjectURL(
+      new Blob([reminderCalendar(repo.snapshot().preferences)], { type: 'text/calendar' })
+    );
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'sharp-daily-reminders.ics';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    status.textContent = 'Import the file into your calendar to enable alerts.';
   });
-
-  // Bind Times
-  container.querySelector('#morningTime').addEventListener('change', (e) => {
-    const p = loadJSON(KEYS.PREFERENCES, {});
-    p.morningTime = e.target.value;
-    saveJSON(KEYS.PREFERENCES, p);
-    audio.tap();
-  });
-
-  container.querySelector('#eveningTime').addEventListener('change', (e) => {
-    const p = loadJSON(KEYS.PREFERENCES, {});
-    p.eveningTime = e.target.value;
-    saveJSON(KEYS.PREFERENCES, p);
-    audio.tap();
-  });
-
-  // Bind Clear Data
-  container.querySelector('#clearDataBtn').addEventListener('click', () => {
-    if (confirm('Are you sure you want to completely reset all cognitive training statistics? This cannot be undone unless you have a backup.')) {
-      clearAllSharpData();
-      audio.buzz();
+  scope.listen(container.querySelector('#persistStorage'), 'click', () =>
+    run(async () => {
+      const result = await navigator.storage?.persist?.();
+      if (scope.active)
+        container.querySelector('#storageStatus').textContent =
+          result === true
+            ? 'Storage protected. Keep backups too.'
+            : result === false
+              ? 'Storage protection declined. Keep backups.'
+              : 'Storage protection unavailable.';
+    })
+  );
+  scope.listen(container.querySelector('#resetProgress'), 'click', () =>
+    run(async () => {
+      if (
+        !(await confirmAction({
+          title: 'Reset local progress?',
+          message: 'Delete all local progress? You’ll need a backup to restore it.',
+          confirm: 'Reset progress',
+          danger: true,
+        }))
+      )
+        return;
+      if (repo.snapshot().preferences.pushManagementToken) await disableAlerts(repo);
+      await repo.update(() => emptyState());
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++)
+        if (localStorage.key(i)?.startsWith('sharp:')) keys.push(localStorage.key(i));
+      keys.forEach((k) => localStorage.removeItem(k));
+      location.hash = '#/today';
       location.reload();
-    }
-  });
+    })
+  );
+  return scope.dispose;
 }

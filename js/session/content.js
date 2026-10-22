@@ -3,7 +3,7 @@ import { LOGIC_PUZZLES } from '../../data/domains/logic-puzzles.js';
 import { MATH_PROBLEMS } from '../../data/domains/math-problems.js';
 import { COMPREHENSION_PASSAGES } from '../../data/domains/comprehension-passages.js';
 import { MEMORY_CLUSTERS } from '../../data/domains/memory-clusters.js';
-import { generateArithmeticProblem, generateStoryProblem } from '../games/math-challenge.js';
+import { generateArithmeticProblem, generateStoryProblem } from '../content/math-generator.js';
 import { validateQuestion, isSafeData } from '../content-validation.js';
 import { FOUNDATION_QUESTIONS, FOUNDATION_MEMORY } from '../../data/packs/foundation-v2.js';
 import { verifyProof } from '../content/solvers.js';

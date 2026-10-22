@@ -8,45 +8,176 @@ import { runEvaluation, GOLDEN, HOLDOUT } from '../intelligence/evaluation.js';
 import { captureEvaluationInputs, checkEvaluation } from '../intelligence/evaluation-quality.js';
 import { downloadJSON } from '../persistence/backup-v2.js';
 export function renderModel(container, repo) {
-  const scope = createSessionScope(); let service, provider, abort, report;
-  scope.addCleanup(() => { abort?.abort(); service?.dispose(); });
-  container.innerHTML = `<h1 class="view-title">Model qualification benchmark</h1><div class="workout-card"><h2>SmolLM2 360M</h2><p>${FEATURES.browserInference ? 'One model. Pilot only. Full benchmark covers 21 arithmetic outputs and 81 contextual coach outputs.' : 'One model. Inference is off.'}</p>
-    <details><summary>Model &amp; download</summary><p>${MODEL_PROFILE.modelId}. ${(MODEL_PROFILE.artifactBytes / 1048576).toFixed(1)} MiB artifacts + 12 MiB runtime.</p><p>Pinned weights: Hugging Face. Pinned library: MLC on GitHub. Requires WebGPU with shader-f16. Same model on desktop, mobile and installed apps. Availability depends on device capabilities. This benchmark does not affect training or ratings.</p></details>
-    <label><input id="modelConsent" type="checkbox" ${FEATURES.browserInference ? '' : 'disabled'}> Download model for a local benchmark</label>
-    <p><button id="prepareModel" class="btn btn-primary" ${FEATURES.browserInference ? '' : 'disabled'}>Prepare model</button><button id="cancelModel" class="btn btn-outline" disabled>Cancel work</button></p>
-    <p id="modelStatus" role="status"></p><button id="benchmarkModel" class="btn btn-primary" disabled>Run full benchmark</button><button id="downloadBenchmark" class="btn btn-outline" hidden>Download model report</button><button id="removeModel" class="btn btn-outline" ${FEATURES.browserInference ? '' : 'disabled'}>Remove this model cache</button><details><summary>Cache &amp; cancellation</summary><p>Cancel stops the worker. Completed artifacts may be reused; interrupted downloads may restart. Removing the model preserves training progress.</p></details><details id="benchmarkPreview" hidden><summary>Report</summary><pre id="benchmarkJSON"></pre></details></div>`;
+  const scope = createSessionScope();
+  let service, provider, abort, report;
+  scope.addCleanup(() => {
+    abort?.abort();
+    service?.dispose();
+  });
+  container.innerHTML = /* HTML */ `
+    <h1 class="view-title">Model qualification benchmark</h1>
+    <div class="workout-card">
+      <h2>SmolLM2 360M</h2>
+      <p>
+        ${FEATURES.browserInference
+          ? 'One model. Pilot only. Full benchmark covers 21 arithmetic outputs and 81 contextual coach outputs.'
+          : 'One model. Inference is off.'}
+      </p>
+      <details>
+        <summary>Model &amp; download</summary>
+        <p>
+          ${MODEL_PROFILE.modelId}. ${(MODEL_PROFILE.artifactBytes / 1048576).toFixed(1)} MiB
+          artifacts + 12 MiB runtime.
+        </p>
+        <p>
+          Pinned weights: Hugging Face. Pinned library: MLC on GitHub. Requires WebGPU with
+          shader-f16. Same model on desktop, mobile and installed apps. Availability depends on
+          device capabilities. This benchmark does not affect training or ratings.
+        </p>
+      </details>
+      <label>
+        <input id="modelConsent" type="checkbox" ${FEATURES.browserInference ? '' : 'disabled'} />
+        Download model for a local benchmark
+      </label>
+      <p>
+        <button
+          id="prepareModel"
+          class="btn btn-primary"
+          ${FEATURES.browserInference ? '' : 'disabled'}
+        >
+          Prepare model
+        </button>
+        <button id="cancelModel" class="btn btn-outline" disabled>Cancel work</button>
+      </p>
+      <p id="modelStatus" role="status"></p>
+      <button id="benchmarkModel" class="btn btn-primary" disabled>Run full benchmark</button>
+      <button id="downloadBenchmark" class="btn btn-outline" hidden>Download model report</button>
+      <button
+        id="removeModel"
+        class="btn btn-outline"
+        ${FEATURES.browserInference ? '' : 'disabled'}
+      >
+        Remove this model cache
+      </button>
+      <details>
+        <summary>Cache &amp; cancellation</summary>
+        <p>
+          Cancel stops the worker. Completed artifacts may be reused; interrupted downloads may
+          restart. Removing the model preserves training progress.
+        </p>
+      </details>
+      <details id="benchmarkPreview" hidden>
+        <summary>Report</summary>
+        <pre id="benchmarkJSON"></pre>
+      </details>
+    </div>
+  `;
   const status = container.querySelector('#modelStatus');
-  const showReport = () => { container.querySelector('#benchmarkPreview').hidden = false; container.querySelector('#benchmarkJSON').textContent = JSON.stringify(report, null, 2); };
+  const showReport = () => {
+    container.querySelector('#benchmarkPreview').hidden = false;
+    container.querySelector('#benchmarkJSON').textContent = JSON.stringify(report, null, 2);
+  };
   const busy = (active) => {
     container.querySelector('#prepareModel').disabled = active || !FEATURES.browserInference;
     container.querySelector('#removeModel').disabled = active || !FEATURES.browserInference;
     container.querySelector('#cancelModel').disabled = !active;
   };
   scope.listen(container.querySelector('#prepareModel'), 'click', async () => {
-    if (!FEATURES.browserInference || !container.querySelector('#modelConsent').checked) { status.textContent = 'Choose the explicit download option first.'; return; }
-    abort = new AbortController(); service?.dispose(); provider = new WebLLMProvider(); service = new IntelligenceService({ repo, provider });
-    busy(true); container.querySelector('#benchmarkModel').disabled = true;
-    container.querySelector('#downloadBenchmark').hidden = true; container.querySelector('#benchmarkPreview').hidden = true;
-    try { const prepared = await service.prepare(MODEL_PROFILE, { consent: true, allowUnqualified: true, signal: abort.signal,
-      onProgress: (p) => { if (scope.active) status.textContent = `${p.phase}: ${p.text || 'Preparing model resources'}`; } });
-      report = { version: 'sharp-model-benchmark-v3', profile: MODEL_PROFILE, preparation: prepared }; if (scope.active) { status.textContent = `Ready in ${prepared.loadMs}ms. Candidate unqualified.`; container.querySelector('#benchmarkModel').disabled = false; showReport(); }
-    } catch (e) { if (scope.active) status.textContent = `Preparation stopped: ${e.message}. Curated exercises remain available.`; }
-    finally { if (scope.active) busy(false); }
+    if (!FEATURES.browserInference || !container.querySelector('#modelConsent').checked) {
+      status.textContent = 'Choose the explicit download option first.';
+      return;
+    }
+    abort = new AbortController();
+    service?.dispose();
+    provider = new WebLLMProvider();
+    service = new IntelligenceService({ repo, provider });
+    busy(true);
+    container.querySelector('#benchmarkModel').disabled = true;
+    container.querySelector('#downloadBenchmark').hidden = true;
+    container.querySelector('#benchmarkPreview').hidden = true;
+    try {
+      const prepared = await service.prepare(MODEL_PROFILE, {
+        consent: true,
+        allowUnqualified: true,
+        signal: abort.signal,
+        onProgress: (p) => {
+          if (scope.active)
+            status.textContent = `${p.phase}: ${p.text || 'Preparing model resources'}`;
+        },
+      });
+      report = {
+        version: 'sharp-model-benchmark-v3',
+        profile: MODEL_PROFILE,
+        preparation: prepared,
+      };
+      if (scope.active) {
+        status.textContent = `Ready in ${prepared.loadMs}ms. Candidate unqualified.`;
+        container.querySelector('#benchmarkModel').disabled = false;
+        showReport();
+      }
+    } catch (e) {
+      if (scope.active)
+        status.textContent = `Preparation stopped: ${e.message}. Curated exercises remain available.`;
+    } finally {
+      if (scope.active) busy(false);
+    }
   });
   scope.listen(container.querySelector('#benchmarkModel'), 'click', async () => {
-    abort = new AbortController(); container.querySelector('#benchmarkModel').disabled = true; busy(true);
-    try { Object.assign(report, await captureEvaluationInputs()); report.evaluation = await runEvaluation(service, { dataset: [...GOLDEN, ...HOLDOUT], repeats: 3, signal: abort.signal,
-      onResult: (r) => { if (scope.active) status.textContent = `${r.fixtureId}: ${r.source}, ${r.timings.totalMs}ms`; } });
+    abort = new AbortController();
+    container.querySelector('#benchmarkModel').disabled = true;
+    busy(true);
+    try {
+      Object.assign(report, await captureEvaluationInputs());
+      report.evaluation = await runEvaluation(service, {
+        dataset: [...GOLDEN, ...HOLDOUT],
+        repeats: 3,
+        signal: abort.signal,
+        onResult: (r) => {
+          if (scope.active)
+            status.textContent = `${r.fixtureId}: ${r.source}, ${r.timings.totalMs}ms`;
+        },
+      });
       report.coachEvaluation = await evaluateCoach(provider, { signal: abort.signal });
       const coachQuality = checkCoachEvaluation(report.coachEvaluation);
-      if (scope.active) { status.textContent = `Coach ${coachQuality.count}/${coachQuality.count} accepted · arithmetic ${report.evaluation.accepted}/${report.evaluation.count} accepted · ${report.evaluation.fallbackCount} fallbacks. Candidate unqualified.`; container.querySelector('#downloadBenchmark').hidden = false; showReport(); }
+      if (scope.active) {
+        status.textContent = `Coach ${coachQuality.count}/${coachQuality.count} accepted · arithmetic ${report.evaluation.accepted}/${report.evaluation.count} accepted · ${report.evaluation.fallbackCount} fallbacks. Candidate unqualified.`;
+        container.querySelector('#downloadBenchmark').hidden = false;
+        showReport();
+      }
       checkEvaluation(report.evaluation);
-    } catch (e) { if (scope.active) status.textContent = e.message; }
-    finally { if (scope.active) { container.querySelector('#benchmarkModel').disabled = provider.getStatus().state !== 'ready'; busy(false); } }
+    } catch (e) {
+      if (scope.active) status.textContent = e.message;
+    } finally {
+      if (scope.active) {
+        container.querySelector('#benchmarkModel').disabled =
+          provider.getStatus().state !== 'ready';
+        busy(false);
+      }
+    }
   });
   scope.listen(container.querySelector('#cancelModel'), 'click', () => abort?.abort());
-  scope.listen(document, 'visibilitychange', () => { if (document.hidden) { abort?.abort(); provider?.dispose(); container.querySelector('#benchmarkModel').disabled = true; if (FEATURES.browserInference) status.textContent = 'Paused. Prepare the model again.'; } });
-  scope.listen(container.querySelector('#downloadBenchmark'), 'click', () => downloadJSON(report, 'sharp-model-benchmark.json'));
-  scope.listen(container.querySelector('#removeModel'), 'click', async () => { try { provider ||= new WebLLMProvider(); await provider.removeModel(); if (scope.active) { status.textContent = 'Model removed. Progress is unchanged.'; container.querySelector('#benchmarkModel').disabled = true; } } catch (e) { if (scope.active) status.textContent = e.message; } });
+  scope.listen(document, 'visibilitychange', () => {
+    if (document.hidden) {
+      abort?.abort();
+      provider?.dispose();
+      container.querySelector('#benchmarkModel').disabled = true;
+      if (FEATURES.browserInference) status.textContent = 'Paused. Prepare the model again.';
+    }
+  });
+  scope.listen(container.querySelector('#downloadBenchmark'), 'click', () =>
+    downloadJSON(report, 'sharp-model-benchmark.json')
+  );
+  scope.listen(container.querySelector('#removeModel'), 'click', async () => {
+    try {
+      provider ||= new WebLLMProvider();
+      await provider.removeModel();
+      if (scope.active) {
+        status.textContent = 'Model removed. Progress is unchanged.';
+        container.querySelector('#benchmarkModel').disabled = true;
+      }
+    } catch (e) {
+      if (scope.active) status.textContent = e.message;
+    }
+  });
   return scope.dispose;
 }
