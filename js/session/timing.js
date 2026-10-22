@@ -1,4 +1,4 @@
-// Active answer time and reading time are separate, including passage reviews.
+// Initial reading time is separate from answering with the passage in view.
 export function createQuestionTimer({
   initial = {},
   reading = false,

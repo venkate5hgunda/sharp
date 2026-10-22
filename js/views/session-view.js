@@ -232,7 +232,7 @@ export function renderSession(container, { repo, controller, id, navigate, fresh
               : ''}
             <h2 id="questionPrompt">${h(q.question || q.prompt)}</h2>
             ${q.passage
-              ? `<details class="passage-review"><summary>Read passage again</summary><p>${h(q.passage)}</p></details>`
+              ? `<details class="passage-review" open><summary>Passage</summary><p>${h(q.passage)}</p></details>`
               : ''}
           </div>
           <div class="logic-options-grid" role="group" aria-labelledby="questionPrompt">
@@ -246,8 +246,6 @@ export function renderSession(container, { repo, controller, id, navigate, fresh
         </div>
       </div>
     `;
-    const review = stage.querySelector('.passage-review');
-    if (review) part.listen(review, 'toggle', () => timer.setReading(review.open));
     const btns = stage.querySelectorAll('[data-val]');
     let submitted = false,
       shortcut = () => {};

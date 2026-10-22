@@ -9,7 +9,7 @@ The app uses native browser modules with one production implementation of each s
 - `js/application.js` composes repository, sessions, reminders and route renderers. It does not contain screen markup.
 - `js/router.js` owns navigation, view disposal, route aliases, focus and the normal/focused shell. Asynchronous route resolution must finish before mounting; stale resolutions cannot replace newer navigation.
 - `js/views/` owns presentation and scoped events. Each stateful view returns a cleanup function. Rendering a new memory or exercise state also releases the previous state's listeners and timers.
-- `js/session/` owns persistent exercise transitions, projections, content selection and question timing. Reading and passage review time are excluded from active answer time.
+- `js/session/` owns persistent exercise transitions, projections, content selection and question timing. Initial reading time is excluded from active answer time. The passage stays expanded by default while answering; its visibility does not change answer timing.
 - `js/content/` contains the exercise registry, seedable math generators and solvers. Question generation has no dependency on UI modules, audio or persistence.
 - `js/ui/` contains shared presentation helpers. Version suffixes are reserved for persisted formats, rather than duplicate screen implementations.
 

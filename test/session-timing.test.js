@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createQuestionTimer } from '../js/session/timing.js';
 
-test('reading and reviewing a passage do not inflate active answer time', () => {
+test('reading intervals do not inflate active answer time', () => {
   let time = 0;
   const timer = createQuestionTimer({ reading: true, now: () => time });
   time = 1000;

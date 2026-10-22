@@ -40,6 +40,8 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 700 }
           await fitsViewport(page, '#readingDone');
           await page.getByRole('button', { name: 'Ready for the question', exact: true }).click();
           await expect(page.locator('#readingPhase')).toBeHidden();
+          await expect(page.locator('.passage-review')).toHaveAttribute('open', '');
+          await expect(page.locator('.passage-review p')).toBeVisible();
         }
         await fitsViewport(page, '.logic-options-grid');
         for (const answer of await page.locator('[data-val]').all()) {
@@ -74,13 +76,34 @@ test('exercise filters, theme selection and reading review work without extra st
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Theme', { exact: true }).selectOption('dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.clock.install();
   await page.goto('/#/games/comprehension-inference');
   await page.getByRole('button', { name: 'Start exercise', exact: true }).click();
+  await expect(page.locator('#readingDone')).toBeVisible();
+  await page.clock.fastForward(1000);
   await page.getByRole('button', { name: 'Ready for the question', exact: true }).click();
-  await page.getByText('Read passage again', { exact: true }).click();
+  await expect(page.locator('.passage-review')).toHaveAttribute('open', '');
   await expect(page.locator('.passage-review p')).toBeVisible();
+  await page.clock.fastForward(1000);
+  await page.getByText('Passage', { exact: true }).click();
+  await expect(page.locator('.passage-review p')).toBeHidden();
+  await page.getByText('Passage', { exact: true }).click();
+  await expect(page.locator('.passage-review p')).toBeVisible();
+  await page.clock.fastForward(1000);
   const result = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']).analyze();
   expect(result.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target) }))).toEqual([]);
+  await page.locator('[data-val]').first().click();
+  await expect(page.locator('#nextQuestion')).toBeVisible();
+  const timing = await page.evaluate(async () => {
+    const { initRepository } = await import('/js/persistence/repository.js');
+    const repo = await initRepository(), id = location.hash.split('/').at(-1);
+    return repo.snapshot().attempts[`${id}:0:0`];
+  });
+  expect(timing.readingMs).toBeGreaterThanOrEqual(1000);
+  expect(timing.activeMs).toBeGreaterThanOrEqual(2000);
+  await page.getByRole('button', { name: 'Next question', exact: true }).click();
+  await page.getByRole('button', { name: 'Ready for the question', exact: true }).click();
+  await expect(page.locator('.passage-review')).toHaveAttribute('open', '');
 });
 
 for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
@@ -134,6 +157,8 @@ test('a long reading question keeps its prompt visible and every answer reachabl
   });
   await page.reload();
   await page.getByRole('button', { name: 'Ready for the question', exact: true }).click();
+  await expect(page.locator('.passage-review')).toHaveAttribute('open', '');
+  await expect(page.locator('.passage-review p')).toBeVisible();
   await fitsViewport(page, '#questionPrompt');
   await fitsViewport(page, '.logic-options-grid');
   const questionBounds = await page.locator('#questionPrompt').boundingBox();
